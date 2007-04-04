@@ -95,7 +95,8 @@ function login_checkInput($input)
         $openid_url = $input['openid_url'];
         $openid_url = Auth_OpenID::normalizeUrl($openid_url);
         $password = $input['password'];
-        if (!checkLogin($openid_url, $password)) {
+        $server =& getServer();
+        if (!$server->checkLogin($openid_url, $password)) {
             $errors[] = 'The entered password does not match the ' .
                 'entered identity URL.';
         }

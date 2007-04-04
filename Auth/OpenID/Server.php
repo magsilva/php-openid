@@ -1236,12 +1236,14 @@ class Auth_OpenID_UntrustedReturnURL extends Auth_OpenID_ServerError {
  * @package OpenID
  */
 class Auth_OpenID_Server {
-    function Auth_OpenID_Server(&$store)
+    function Auth_OpenID_Server(&$store, &$auth)
     {
         $this->store =& $store;
         $this->signatory =& new Auth_OpenID_Signatory($this->store);
         $this->encoder =& new Auth_OpenID_SigningEncoder($this->signatory);
         $this->decoder =& new Auth_OpenID_Decoder();
+        
+       	$this->auth =& $auth;
     }
 
     /**
@@ -1301,6 +1303,11 @@ class Auth_OpenID_Server {
     function decodeRequest(&$query)
     {
         return $this->decoder->decode($query);
+    }
+    
+    function checkLogin($openid_url, $password)
+    {
+  		return $this->auth->checkLogin($openid_url, $password);
     }
 }
 

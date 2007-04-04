@@ -1,7 +1,8 @@
 <?php
 
 /**
- * This file specifies the interface for PHP OpenID store implementations.
+ * This file supplies a dumb store backend for OpenID servers and
+ * consumers.
  *
  * PHP versions 4 and 5
  *
@@ -14,45 +15,51 @@
  */
 
 /**
- * This is the interface for the authentication mechanisms the OpenID library
- * uses.
- * 
- * @package OpenID
- * @author Marco Aurélio Graciotto Silva <magsilva@gmail.com>
+ * Import the interface for creating a new store class.
  */
-class Auth_OpenID_OpenIDAuth {
-
-	/**
-	 * Check user login
-	 * 
-	 * @param $openid_url User's OpenID URL.
-	 * @param $password User's password.
-	 * 
-	 * @return True if the password is correct, False otherwise.
-	 */
-	function checkLogin($openid_url, $password) {
-        trigger_error('Auth_OpenID_OpenIDAuth::checkLogin not implemented',
-        	E_USER_ERROR);
-	}
-}
-
+require_once 'Auth/OpenID/Interface.php';
 
 /**
- * This is the interface for the store objects the OpenID library
- * uses. It is a single class that provides all of the persistence
- * mechanisms that the OpenID library needs, for both servers and
- * consumers.  If you want to create an SQL-driven store, please see
- * then {@link Auth_OpenID_SQLStore} class.
- *
  * @package OpenID
- * @author JanRain, Inc. <openid@janrain.com>
  */
-class Auth_OpenID_OpenIDStore {
-    /**
-     * @var integer The length of the auth key that should be returned
-     * by the getAuthKey method.
+class Auth_OpenID_LDAPStore extends Auth_OpenID_OpenIDStore
+{
+	static $auth_key;
+	
+	/**
+     * @param server_name ldaps://hostname/
      */
-    var $AUTH_KEY_LEN = 20;
+    function Auth_OpenID_LDAPStore($server_name, $base_dn, $bind_username = null, $bind_password = null, $user_filter = null)
+    {
+    	$this->server = ldap_connect($server_name);
+    	ldap_set_option($this->server, LDAP_OPT_PROTOCOL_VERSION, 3);
+    	ldap_set_option($this->server, LDAP_OPT_DEREF, LDAP_DEREF_ALWAYS);
+    	ldap_start_tls($this->server);
+    	$this->binding = ldap_bind($this->server, $bind_username, $bind_password);
+    	
+    	$this->auth_key = Auth_OpenID_CryptUtil::randomString($this->AUTH_KEY_LEN);
+    }
+
+	function destroy()
+	{
+		ldap_close($this->server);
+	}
+
+	function get_username($url)
+	{
+	}
+
+	function get_user($url)
+	{
+    	$username = $this->get_username($server_url);
+    	$sr = ldap_search($this->server, $username);
+    	if (ldap_count_entries($this->server, $sr) != 1) {
+    		return null;
+    	}
+    	$userinfo = ldap_get_entries($this->server, $sr);
+    	$userinfo = $userinfo[0];
+    	return $userinfo;
+	}
 
     /**
      * This method puts an Association object into storage,
@@ -69,8 +76,21 @@ class Auth_OpenID_OpenIDStore {
      */
     function storeAssociation($server_url, $association)
     {
-        trigger_error("Auth_OpenID_OpenIDStore::storeAssociation ".
-                      "not implemented", E_USER_ERROR);
+    	$user = $this->get_user($server_url);
+    	$username = $user['dn'];
+    	$attrs = array();
+    	$attrs['association'] = $association;
+    	ldap_mod_add($this->server, $username, $attrs);
+    	
+    	/*
+    	$server_url,
+                                            $association->handle,
+                                            $this->blobEncode(
+                                                  $association->secret),
+                                            $association->issued,
+                                            $association->lifetime,
+                                            $association->assoc_type
+                                            */
     }
 
     /**
@@ -105,8 +125,19 @@ class Auth_OpenID_OpenIDStore {
      */
     function getAssociation($server_url, $handle = null)
     {
-        trigger_error("Auth_OpenID_OpenIDStore::getAssociation ".
-                      "not implemented", E_USER_ERROR);
+    	$userinfo = $this->get_user($server_url);
+    	
+    	$association = new Auth_OpenID_Association(
+    		$assoc_row['handle'],
+    		$assoc_row['secret'],
+    		$assoc_row['issued'],
+    		$assoc_row['lifetime'],
+    		$assoc_row['assoc_type']);
+    	
+    	if ($association->getExpiresIn() == 0) {
+    		$this->removeAssociation($server_url, $assoc->handle);
+    	}
+    	return $association;
     }
 
     /**
@@ -129,8 +160,15 @@ class Auth_OpenID_OpenIDStore {
      */
     function removeAssociation($server_url, $handle)
     {
-        trigger_error("Auth_OpenID_OpenIDStore::removeAssociation ".
-                      "not implemented", E_USER_ERROR);
+    	$userinfo = $this->get_user($server_url);
+    	if (isset($userinfo['association'])) {
+    		$attrs = array();
+    		$attrs['association'] = array();
+    		ldap_mod_del($this->server, $userinfo['dn'], $attrs);
+    		return true;
+    	} else {
+    		return false;
+    	}
     }
 
     /**
@@ -143,8 +181,6 @@ class Auth_OpenID_OpenIDStore {
      */
     function storeNonce($nonce)
     {
-        trigger_error("Auth_OpenID_OpenIDStore::storeNonce ".
-                      "not implemented", E_USER_ERROR);
     }
 
     /**
@@ -164,11 +200,10 @@ class Auth_OpenID_OpenIDStore {
      */
     function useNonce($nonce)
     {
-        trigger_error("Auth_OpenID_OpenIDStore::useNonce ".
-                      "not implemented", E_USER_ERROR);
+        return true;
     }
 
-    /**
+  	/**
      * This method returns a key used to sign the tokens, to ensure
      * that they haven't been tampered with in transit. It should
      * return the same key every time it is called. The key returned
@@ -180,33 +215,21 @@ class Auth_OpenID_OpenIDStore {
      */
     function getAuthKey()
     {
-        trigger_error("Auth_OpenID_OpenIDStore::getAuthKey ".
-                      "not implemented", E_USER_ERROR);
+    	if (strlen($this->auth_key) != $this->AUTH_KEY_LEN) {
+            $fmt = "Expected %d-byte string for auth key. Got key of length %d";
+            trigger_error(sprintf($fmt, $this->AUTH_KEY_LEN, strlen($this->auth_key)), E_USER_WARNING);
+            return null;
+        }
+        return $this->auth_key;
     }
-
-    /**
-     * This method must return true if the store is a dumb-mode-style
-     * store. Unlike all other methods in this class, this one
-     * provides a default implementation, which returns false.
-     *
-     * In general, any custom subclass of {@link Auth_OpenID_OpenIDStore}
-     * won't override this method, as custom subclasses are only likely to
-     * be created when the store is fully functional.
-     *
-     * @return bool true if the store works fully, false if the
-     * consumer will have to use dumb mode to use this store.
-     */
-    function isDumb()
-    {
-        return false;
-    }
-
+    
     /**
      * Removes all entries from the store; implementation is optional.
      */
     function reset()
     {
     }
-
+    
 }
+
 ?>

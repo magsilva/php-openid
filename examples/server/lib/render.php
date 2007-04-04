@@ -31,8 +31,7 @@ define('http_internal_error', 'HTTP/1.1 500 Internal Error');
 define('header_connection_close', 'Connection: close');
 define('header_content_text', 'Content-Type: text/plain; charset=us-ascii');
 
-define('redirect_message',
-       'Please wait; you are being redirected to <%s>');
+define('redirect_message', 'Please wait; you are being redirected to <%s>');
 
 
 /**

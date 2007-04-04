@@ -82,7 +82,7 @@ function getServer()
 {
     static $server = null;
     if (!isset($server)) {
-        $server =& new Auth_OpenID_Server(getOpenIDStore());
+        $server =& new Auth_OpenID_Server(getOpenIDStore(), getOpenIDAuth());
     }
     return $server;
 }
@@ -105,27 +105,6 @@ function isTrusted($identity_url, $trust_root)
 
     $sites = getSessionSites();
     return isset($sites[$trust_root]) && $sites[$trust_root];
-}
-
-/**
- * Return a hashed form of the user's password
- */
-function hashPassword($password)
-{
-    return bin2hex(Auth_OpenID_SHA1($password));
-}
-
-/**
- * Check the user's login information
- */
-function checkLogin($openid_url, $password)
-{
-    // from config.php
-    global $openid_users;
-    $hash = hashPassword($password);
-
-    return isset($openid_users[$openid_url])
-        && $hash == $openid_users[$openid_url];
 }
 
 /**
