@@ -21,23 +21,24 @@ require_once "Auth/OpenID.php";
 /**
  * Data.
  */
+$store_types = array('Filesystem' => 'Auth_OpenID_FileStore',
+                     'MySQL' => 'Auth_OpenID_MySQLStore',
+                     'PostgreSQL' => 'Auth_OpenID_PostgreSQLStore',
+                     'SQLite' => 'Auth_OpenID_SQLiteStore');
 
-$store_types = array("Filesystem" => "Auth_OpenID_FileStore",
-                     "MySQL" => "Auth_OpenID_MySQLStore",
-                     "PostgreSQL" => "Auth_OpenID_PostgreSQLStore",
-                     "SQLite" => "Auth_OpenID_SQLiteStore");
+$auth_types = array('Array' => 'Auth_OpenID_ArrayAuth',
+                    'LDAP' => 'Auth_OpenID_LDAPAuth');
 
 /**
  * Main.
  */
-
 $messages = array();
 
 session_start();
 init_session();
 
 if (!check_session() ||
-    isset($_GET['add_openid'])) {
+	isset($_GET['add_openid'])) {
     render_form();
 } else {
     print generate_config(isset($_GET['download']));
@@ -107,18 +108,30 @@ function check_session() {
             $messages[] = "No store type chosen.";
         } else {
             switch ($_SESSION['store_type']) {
-            case "Filesystem":
+            case 'Filesystem':
                 if (!$_SESSION['store_data']['fs_path']) {
-                    $messages[] = "Please specify a filesystem store path.";
+                    $messages[] = 'Please specify a filesystem store path.';
                 } else {
                   if (!check_open_basedir($_SESSION['store_data']['fs_path'])) {
-                    $messages[] = "The filesystem store path violates PHP's <code>open_basedir</code> setting.";
+                    $messages[] = 'The filesystem store path violates PHP\'s <code>open_basedir</code> setting.';
                     $bad_path = true;
                   }
                 }
                 break;
 
-            case "SQLite":
+            case 'LDAP':
+            	if (!$_SESSION['store_data']['server_name']) {
+            		$messages = 'Please specify the name of the LDAP server.';
+            	}
+            	if (!$_SESSION['store_data']['base_dn']) {
+            		$messages = 'Please specify the base directory name for the LDAP server.'; 
+            	}
+            	if (!$_SESSION['store_data']['user_filter']) {
+            		$messages = 'Please specify the object attribute that much match the username';
+            	}
+            	break;
+
+            case 'SQLite':
                 if (!$_SESSION['store_data']['sqlite_path']) {
                     $messages[] = "Please specify a SQLite database path.";
                 } else {
@@ -129,6 +142,8 @@ function check_session() {
                 }
                 break;
 
+			case 'MySQL':
+			case 'PostgreSQL':
             default:
                 if (!($_SESSION['store_data']['host'] &&
                       $_SESSION['store_data']['database'] &&
@@ -140,23 +155,41 @@ function check_session() {
         }
     }
 
-    if ($_SESSION['store_type'] &&
-        $_SESSION['server_url'] &&
-        (parse_url($_SESSION['server_url']) !== false) &&
-        ((($_SESSION['store_type'] == 'Filesystem') &&
-          $_SESSION['store_data']['fs_path']) ||
-         (($_SESSION['store_type'] == 'SQLite') &&
-          $_SESSION['store_data']['sqlite_path']) ||
-         ($_SESSION['store_data']['host'] &&
-          $_SESSION['store_data']['username'] &&
-          $_SESSION['store_data']['database'] &&
-          $_SESSION['store_data']['password'])) &&
-        !$bad_path) {
 
-        return true;
+    if (! $_SESSION['server_url'] || parse_url($_SESSION['server_url']) === false) {
+    	return false;
+    }
+    
+    if (! $_SESSION['store_type']) {
+    	return false;
+    }
+    
+    if ($_SESSION['store_type'] == 'Filesystem' && (! $_SESSION['store_data']['fs_path'] || $bad_path)) {
+    	return false;
+    }
+    
+    if ($_SESSION['store_type'] == 'SQLite' && (! $_SESSION['store_data']['sqlite_path'] || $bad_path)) {
+    	return false;
+    }
+    
+    if ($_SESSION['store_type'] == 'LDAP') {
+      	if (!$_SESSION['store_data']['server_name'] ||
+      	    ! $_SESSION['store_data']['base_dn'] ||
+      	    ! $_SESSION['store_data']['user_filter']) {
+      	    return false;
+   	    }
+	}
+    
+    if ($_SESSION['store_type'] == 'MySQL' || $_SESSION['store_type'] == 'PostgreSQL') {
+    	if (! $_SESSION['store_data']['host'] ||
+    	    ! $_SESSION['store_data']['username'] ||
+    	    ! $_SESSION['store_data']['database'] ||
+    	    ! $_SESSION['store_data']['password']) {
+    		return false;
+    	}
     }
 
-    return false;
+    return true;
 }
 
 function render_form() {
@@ -178,6 +211,12 @@ function render_form() {
     if (extension_loaded('sqlite') ||
         @dl('sqlite.' . PHP_SHLIB_SUFFIX)) {
       $sqlite_found = true;
+    }
+    
+    $ldap_found = false;
+    if (extension_loaded('ldap') ||
+    	@dl('ldap.' . PHP_SHLIB_SUFFIX)) {
+      $ldap_found = true;
     }
 
     $mysql_found = false;
@@ -223,7 +262,7 @@ div.store_fields {
 
 div.store_fields label.field {
  float: left;
- width: 1.75in;
+ width: 2.35in;
 }
 
 div.store_fields > div {
@@ -469,55 +508,61 @@ print $_SESSION['server_url'];
  */
 function getOpenIDStore()
 {
-    <?php
-
+<?php
     switch ($_SESSION['store_type']) {
-    case "Filesystem":
-
-        print "require_once \"Auth/OpenID/FileStore.php\";\n    ";
-        print "return new Auth_OpenID_FileStore(\"".$_SESSION['store_data']['fs_path']."\");\n";
+    case 'Filesystem':
+        print "require_once 'Auth/OpenID/FileStore.php';\n";
+        print "return new Auth_OpenID_FileStore('" . $_SESSION['store_data']['fs_path'] . "');\n";
         break;
 
-    case "SQLite":
-
-        print "require_once \"Auth/OpenID/SQLiteStore.php\";\n    ";
-        print "return new Auth_OpenID_SQLiteStore(\"".$_SESSION['store_data']['sqlite_path']."\");\n";
+    case 'SQLite':
+        print "require_once 'Auth/OpenID/SQLiteStore.php';\n";
+        print "return new Auth_OpenID_SQLiteStore('" . $_SESSION['store_data']['sqlite_path'] . "');\n";
         break;
 
-    case "MySQL":
+    case 'LDAP':
+        print "require_once 'Auth/OpenID/LDAPStore.php';\n";
+        print "return new Auth_OpenID_LDAPStore('" .
+        	$_SESSION['store_data']['server_name'] . ', ' .
+        	$_SESSION['store_data']['base_dn'] . ', ' .
+        	$_SESSION['store_data']['bind_username'] . ', ' .
+        	$_SESSION['store_data']['bind_password'] . ', ' .
+        	$_SESSION['store_data']['user_filter'] . "');\n";
+        break;
 
-        ?>require_once 'Auth/OpenID/MySQLStore.php';
-    require_once 'DB.php';
-
-    $dsn = array(
+    case 'MySQL':
+?>
+        require_once 'Auth/OpenID/MySQLStore.php';
+        require_once 'DB.php';
+        
+        $dsn = array(
                  'phptype'  => 'mysql',
                  'username' => '<?php print $_SESSION['store_data']['username']; ?>',
                  'password' => '<?php print $_SESSION['store_data']['password']; ?>',
                  'hostspec' => '<?php print $_SESSION['store_data']['host']; ?>'
                  );
+        $db =& DB::connect($dsn);
+       
+        if (PEAR::isError($db)) {
+            return null;
+        }
 
-    $db =& DB::connect($dsn);
-
-    if (PEAR::isError($db)) {
-        return null;
-    }
-
-    $db->query("USE <?php print $_SESSION['store_data']['database']; ?>");
+        $db->query("USE <?php print $_SESSION['store_data']['database']; ?>");
         
-    $s =& new Auth_OpenID_MySQLStore($db);
-
-    $s->createTables();
-
-    return $s;
+        $s =& new Auth_OpenID_MySQLStore($db);
+        
+        $s->createTables();
+        
+        return $s;
 <?php
         break;
 
     case "PostgreSQL":
+?>
+        require_once 'Auth/OpenID/PostgreSQLStore.php';
+        require_once 'DB.php';
 
-        ?>require_once 'Auth/OpenID/PostgreSQLStore.php';
-    require_once 'DB.php';
-
-    $dsn = array(
+        $dsn = array(
                  'phptype'  => 'pgsql',
                  'username' => '<?php print $_SESSION['store_data']['username']; ?>',
                  'password' => '<?php print $_SESSION['store_data']['password']; ?>',
@@ -525,26 +570,88 @@ function getOpenIDStore()
                  'database' => '<?php print $_SESSION['store_data']['database']; ?>'
                  );
 
-    $db =& DB::connect($dsn);
+         $db =& DB::connect($dsn);
 
-    if (PEAR::isError($db)) {
-        return null;
-    }
-
-    $s =& new Auth_OpenID_PostgreSQLStore($db);
-
-    $s->createTables();
-
-    return $s;
+         if (PEAR::isError($db)) {
+             return null;
+         }
+         
+         $s =& new Auth_OpenID_PostgreSQLStore($db);
+         
+         $s->createTables();
+          
+         return $s;
 <?php
         break;
-    }
-
-    ?>
+}
+?>
 }
 
+
+/**
+ * Initialize an OpenID authentication mechanism
+ *
+ * @return object $auth an instance of OpenID auth (see the
+ * documentation for how to create one)
+ */
+function getOpenIDAuth()
+{
 <?php
-    print "?>";
+    switch ($_SESSION['auth_type']) {
+	    case 'Array':
+?>
+$openid_users = array(<?php
+$i = 0;
+foreach ($_SESSION['users'] as $url => $hash) {
+    $i++;
+    print "\n    '$url' => '$hash'";
+    if ($i < count($_SESSION['users'])) {
+        print ",";
+    }
+}
+?>
+);
+<?php
+    	    print "require_once 'Auth/OpenID/ArrayAuth.php';\n";
+        	print "return new Auth_OpenID_ArrayAuth(\$openid_users);\n";
+        	break;
+
+    	case 'LDAP':
+        	print "require_once 'Auth/OpenID/LDAPAuth.php';\n";
+        	print "return new Auth_OpenID_LDAPAuth('" .
+        		$_SESSION['store_data']['principal_format'] . ', ' .
+        		$_SESSION['store_data']['server_name'] . ', ' .
+        		$_SESSION['store_data']['base_dn'] . ', ' .
+        		$_SESSION['store_data']['bind_username'] . ', ' .
+        		$_SESSION['store_data']['bind_password'] . ', ' .
+        		$_SESSION['store_data']['user_filter'] . "');\n";
+        	break;
+    }
+?>
+}
+
+
+/**
+ * Trusted sites is an array of trust roots.
+ *
+ * Sites in this list will not have to be approved by the user in
+ * order to be used. It is OK to leave this value as-is.
+ *
+ * In a more robust server, this should be a per-user setting.
+ */
+$trusted_sites = array(<?php
+$i = 0;
+foreach ($_SESSION['trust_roots'] as $url) {
+    $i++;
+    print "\n    '$url'";
+    if ($i < count($_SESSION['trust_roots'])) {
+        print ",";
+    }
+}
+?>
+
+);
+<?php
     if (!$download) {
 ?>
 </pre>
