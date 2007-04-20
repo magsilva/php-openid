@@ -13,13 +13,9 @@ define('login_form_pat',
   <form method="post" action="%s">
     <table>
       <tr>
-        <th><label for="openid_url">OpenID URL:</label></th>
+        <th><label for="openid_url">Name:</label></th>
         <td><input type="text" name="openid_url"
                    value="%s" id="openid_url" /></td>
-      </tr>
-      <tr>
-        <th><label for="password">Password:</label></th>
-        <td><input type="password" name="password" id="password" /></td>
       </tr>
       <tr>
         <td colspan="2">

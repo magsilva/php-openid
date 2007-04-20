@@ -18,6 +18,7 @@ require_once 'PHPUnit/GUI/HTML.php';
 
 error_reporting(E_ALL);
 
+global $__test_errors;
 $__test_errors = array();
 
 function __handler($code, $message)
@@ -62,6 +63,7 @@ function __getError()
  */
 function loadTests($test_dir, $test_names)
 {
+    global $_tests;
     $suites = array();
 
     foreach ($test_names as $filename) {
@@ -113,28 +115,35 @@ $_tests = array(
                       'dir' => 'Tests/Auth/OpenID/',
                       'files' => array(
                                        'Association',
+                                       'AssociationResponse',
+                                       'AuthRequest',
                                        'BigMath',
                                        'Consumer',
                                        'CryptUtil',
                                        'DiffieHellman',
+                                       'Discover_OpenID',
                                        'HMACSHA1',
                                        'KVForm',
-                                       'Util',
-                                       'Parse',
-                                       'StoreTest',
-                                       'Server',
-                                       'TrustRoot',
-                                       'Discover',
+                                       'Message',
+                                       'Negotiation',
+                                       'Nonce',
                                        'OpenID_Yadis',
-                                       'URINorm'),
+                                       'Parse',
+                                       'Server',
+                                       'SReg',
+                                       'StoreTest',
+                                       'TrustRoot',
+                                       'URINorm',
+                                       'Util',
+                                       'VerifyDisco'),
                       ),
                 array(
-                      'dir' => 'Tests/Services/Yadis/',
+                      'dir' => 'Tests/Auth/Yadis/',
                       'files' => array(
                                        'ParseHTML',
                                        'XRDS',
                                        'Yadis',
-                                       'Discover',
+                                       'Discover_Yadis',
                                        'XRI'
                                        )
                       )
@@ -180,10 +189,12 @@ function loadSuite($names=null)
         }
     }
     $selected = selectTests($names);
+
     $result = array();
     foreach ($_tests as $package) {
         $result = array_merge($result, loadTests($package['dir'], $selected));
     }
+
     return $result;
 }
 ?>

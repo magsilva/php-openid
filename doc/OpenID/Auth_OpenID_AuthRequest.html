@@ -23,7 +23,7 @@
         		<!-- ========== Info from phpDoc block ========= -->
 <p class="short-description">This class represents an authentication request from a consumer to  an OpenID server.</p>
 		<p class="notes">
-			Located in <a class="field" href="_Auth---OpenID---Consumer.php.html">/Auth/OpenID/Consumer.php</a> (line <span class="field">934</span>)
+			Located in <a class="field" href="_Auth---OpenID---Consumer.php.html">/Auth/OpenID/Consumer.php</a> (line <span class="field">1615</span>)
 		</p>
 		
 				
@@ -44,11 +44,17 @@
 		</div>
 		<div class="info-box-body">			
 			<div class="method-summary">
-																																						
+																																																																														
 				<div class="method-definition">
 											<span class="method-result">Auth_OpenID_AuthRequest</span>
 										<a href="#Auth_OpenID_AuthRequest" title="details" class="method-name">Auth_OpenID_AuthRequest</a>
-											(<span class="var-type"></span>&nbsp;<span class="var-name">$assoc</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$endpoint</span>)
+											(<span class="var-type"></span>&nbsp;<span class="var-name">&$endpoint</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$assoc</span>)
+									</div>
+														
+				<div class="method-definition">
+											<span class="method-result">void</span>
+										<a href="#addExtension" title="details" class="method-name">addExtension</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">&$extension_request</span>)
 									</div>
 														
 				<div class="method-definition">
@@ -58,9 +64,33 @@
 									</div>
 														
 				<div class="method-definition">
-											<span class="method-result">string</span>
+											<span class="method-result">void</span>
+										<a href="#formMarkup" title="details" class="method-name">formMarkup</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$realm</span>, [<span class="var-type"></span>&nbsp;<span class="var-name">$return_to</span> = <span class="var-default">null</span>], [<span class="var-type"></span>&nbsp;<span class="var-name">$immediate</span> = <span class="var-default">false</span>], [<span class="var-type"></span>&nbsp;<span class="var-name">$form_tag_attrs</span> = <span class="var-default">null</span>])
+									</div>
+														
+				<div class="method-definition">
+											<span class="method-result">void</span>
+										<a href="#getMessage" title="details" class="method-name">getMessage</a>
+											(<span class="var-type">string</span>&nbsp;<span class="var-name">$realm</span>, [<span class="var-type">string</span>&nbsp;<span class="var-name">$return_to</span> = <span class="var-default">null</span>], [<span class="var-type">bool</span>&nbsp;<span class="var-name">$immediate</span> = <span class="var-default">false</span>])
+									</div>
+														
+				<div class="method-definition">
+											<span class="method-result">void</span>
 										<a href="#redirectURL" title="details" class="method-name">redirectURL</a>
-											(<span class="var-type">string</span>&nbsp;<span class="var-name">$trust_root</span>, <span class="var-type">string$</span>&nbsp;<span class="var-name">$return_to</span>, [<span class="var-type"></span>&nbsp;<span class="var-name">$immediate</span> = <span class="var-default">false</span>])
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$realm</span>, [<span class="var-type"></span>&nbsp;<span class="var-name">$return_to</span> = <span class="var-default">null</span>], [<span class="var-type"></span>&nbsp;<span class="var-name">$immediate</span> = <span class="var-default">false</span>])
+									</div>
+														
+				<div class="method-definition">
+											<span class="method-result">void</span>
+										<a href="#setAnonymous" title="details" class="method-name">setAnonymous</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$is_anonymous</span>)
+									</div>
+														
+				<div class="method-definition">
+											<span class="method-result">void</span>
+										<a href="#shouldSendRedirect" title="details" class="method-name">shouldSendRedirect</a>
+										()
 									</div>
 											</div>
 		</div>
@@ -81,7 +111,7 @@
 <div class="evenrow">
 	
 	<div class="method-header">
-		<span class="method-title">Constructor Auth_OpenID_AuthRequest</span> (line <span class="line-number">944</span>)
+		<span class="method-title">Constructor Auth_OpenID_AuthRequest</span> (line <span class="line-number">1625</span>)
 	</div> 
 	
 	<!-- ========== Info from phpDoc block ========= -->
@@ -93,25 +123,52 @@
 		<span class="method-name">
 			Auth_OpenID_AuthRequest
 		</span>
-					(<span class="var-type"></span>&nbsp;<span class="var-name">$assoc</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$endpoint</span>)
+					(<span class="var-type"></span>&nbsp;<span class="var-name">&$endpoint</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$assoc</span>)
 			</div>
 	
 			<ul class="parameters">
 					<li>
 				<span class="var-type"></span>
-				<span class="var-name">$assoc</span>			</li>
+				<span class="var-name">&$endpoint</span>			</li>
 					<li>
 				<span class="var-type"></span>
-				<span class="var-name">$endpoint</span>			</li>
+				<span class="var-name">$assoc</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodaddExtension" id="addExtension"><!-- --></a>
+<div class="oddrow">
+	
+	<div class="method-header">
+		<span class="method-title">addExtension</span> (line <span class="line-number">1642</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Add an extension to this checkid request.</p>
+<p class="description"><p>$extension_request: An object that implements the extension  request interface for adding arguments to an OpenID message.</p></p>
+	
+	<div class="method-signature">
+		<span class="method-result">void</span>
+		<span class="method-name">
+			addExtension
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">&$extension_request</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">&$extension_request</span>			</li>
 				</ul>
 		
 			
 	</div>
 <a name="methodaddExtensionArg" id="addExtensionArg"><!-- --></a>
-<div class="oddrow">
+<div class="evenrow">
 	
 	<div class="method-header">
-		<span class="method-title">addExtensionArg</span> (line <span class="line-number">971</span>)
+		<span class="method-title">addExtensionArg</span> (line <span class="line-number">1666</span>)
 	</div> 
 	
 	<!-- ========== Info from phpDoc block ========= -->
@@ -140,38 +197,149 @@
 		
 			
 	</div>
-<a name="methodredirectURL" id="redirectURL"><!-- --></a>
-<div class="evenrow">
+<a name="methodformMarkup" id="formMarkup"><!-- --></a>
+<div class="oddrow">
 	
 	<div class="method-header">
-		<span class="method-title">redirectURL</span> (line <span class="line-number">990</span>)
+		<span class="method-title">formMarkup</span> (line <span class="line-number">1803</span>)
 	</div> 
 	
 	<!-- ========== Info from phpDoc block ========= -->
-<p class="short-description">Compute the appropriate redirection URL for this request based  on a specified trust root and return-to.</p>
-	<ul class="tags">
-				<li><span class="field">return:</span> The resulting redirect URL that  you should send to the user agent.</li>
-			</ul>
+<p class="short-description">Get html for a form to submit this request to the IDP.</p>
+<p class="description"><p>form_tag_attrs: An array of attributes to be added to the form  tag. 'accept-charset' and 'enctype' have defaults that can be  overridden. If a value is supplied for 'action' or 'method', it  will be replaced.</p></p>
 	
 	<div class="method-signature">
-		<span class="method-result">string</span>
+		<span class="method-result">void</span>
 		<span class="method-name">
-			redirectURL
+			formMarkup
 		</span>
-					(<span class="var-type">string</span>&nbsp;<span class="var-name">$trust_root</span>, <span class="var-type">string$</span>&nbsp;<span class="var-name">$return_to</span>, [<span class="var-type"></span>&nbsp;<span class="var-name">$immediate</span> = <span class="var-default">false</span>])
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$realm</span>, [<span class="var-type"></span>&nbsp;<span class="var-name">$return_to</span> = <span class="var-default">null</span>], [<span class="var-type"></span>&nbsp;<span class="var-name">$immediate</span> = <span class="var-default">false</span>], [<span class="var-type"></span>&nbsp;<span class="var-name">$form_tag_attrs</span> = <span class="var-default">null</span>])
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$realm</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$return_to</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$immediate</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$form_tag_attrs</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodgetMessage" id="getMessage"><!-- --></a>
+<div class="evenrow">
+	
+	<div class="method-header">
+		<span class="method-title">getMessage</span> (line <span class="line-number">1710</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Produce a <a href="../OpenID/Auth_OpenID_Message.html">Auth_OpenID_Message</a> representing this  request.</p>
+	
+	<div class="method-signature">
+		<span class="method-result">void</span>
+		<span class="method-name">
+			getMessage
+		</span>
+					(<span class="var-type">string</span>&nbsp;<span class="var-name">$realm</span>, [<span class="var-type">string</span>&nbsp;<span class="var-name">$return_to</span> = <span class="var-default">null</span>], [<span class="var-type">bool</span>&nbsp;<span class="var-name">$immediate</span> = <span class="var-default">false</span>])
 			</div>
 	
 			<ul class="parameters">
 					<li>
 				<span class="var-type">string</span>
-				<span class="var-name">$trust_root</span><span class="var-description">: The trust root URI for your  application.</span>			</li>
+				<span class="var-name">$realm</span><span class="var-description">: The URL (or URL pattern) that identifies  your web site to the user when she is authorizing it.</span>			</li>
 					<li>
-				<span class="var-type">string$</span>
-				<span class="var-name">$return_to</span><span class="var-description">: The return-to URL to be used when the  OpenID server redirects the user back to your site.</span>			</li>
+				<span class="var-type">string</span>
+				<span class="var-name">$return_to</span><span class="var-description">: <p>The URL that the OpenID provider will  send the user back to after attempting to verify her identity.</p><p>Not specifying a return_to URL means that the user will not be  returned to the site issuing the request upon its completion.</p></span>			</li>
+					<li>
+				<span class="var-type">bool</span>
+				<span class="var-name">$immediate</span><span class="var-description">: If true, the OpenID provider is to send  back a response immediately, useful for behind-the-scenes  authentication attempts.  Otherwise the OpenID provider may  engage the user before providing a response.  This is the  default case, as the user may need to provide credentials or  approve the request before a positive response can be sent.</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodredirectURL" id="redirectURL"><!-- --></a>
+<div class="oddrow">
+	
+	<div class="method-header">
+		<span class="method-title">redirectURL</span> (line <span class="line-number">1783</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+	
+	<div class="method-signature">
+		<span class="method-result">void</span>
+		<span class="method-name">
+			redirectURL
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$realm</span>, [<span class="var-type"></span>&nbsp;<span class="var-name">$return_to</span> = <span class="var-default">null</span>], [<span class="var-type"></span>&nbsp;<span class="var-name">$immediate</span> = <span class="var-default">false</span>])
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$realm</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$return_to</span>			</li>
 					<li>
 				<span class="var-type"></span>
 				<span class="var-name">$immediate</span>			</li>
 				</ul>
+		
+			
+	</div>
+<a name="methodsetAnonymous" id="setAnonymous"><!-- --></a>
+<div class="evenrow">
+	
+	<div class="method-header">
+		<span class="method-title">setAnonymous</span> (line <span class="line-number">1680</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Set whether this request should be made anonymously. If a  request is anonymous, the identifier will not be sent in the  request. This is only useful if you are making another kind of  request with an extension in this request.</p>
+<p class="description"><p>Anonymous requests are not allowed when the request is made  with OpenID 1.</p></p>
+	
+	<div class="method-signature">
+		<span class="method-result">void</span>
+		<span class="method-name">
+			setAnonymous
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$is_anonymous</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$is_anonymous</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodshouldSendRedirect" id="shouldSendRedirect"><!-- --></a>
+<div class="oddrow">
+	
+	<div class="method-header">
+		<span class="method-title">shouldSendRedirect</span> (line <span class="line-number">1816</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+	
+	<div class="method-signature">
+		<span class="method-result">void</span>
+		<span class="method-name">
+			shouldSendRedirect
+		</span>
+				()
+			</div>
+	
 		
 			
 	</div>
@@ -181,7 +349,7 @@
 
 
 	<p class="notes" id="credit">
-		Documentation generated on Fri, 23 Mar 2007 10:36:24 -0700 by <a href="http://www.phpdoc.org" target="_blank">phpDocumentor 1.3.0</a>
+		Documentation generated on Thu, 05 Apr 2007 15:30:04 -0700 by <a href="http://www.phpdoc.org" target="_blank">phpDocumentor 1.3.0</a>
 	</p>
 	</div></body>
 </html>

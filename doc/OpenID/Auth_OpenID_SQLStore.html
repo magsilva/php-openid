@@ -17,19 +17,18 @@
 	<div class="nav-bar">
 					<span class="disabled">Description</span> |
 							<a href="#sec-descendents">Descendents</a>
-			|											<a href="#sec-vars">Vars</a>
-						|											<a href="#sec-method-summary">Methods</a> (<a href="#sec-methods">details</a>)
+			|													<a href="#sec-method-summary">Methods</a> (<a href="#sec-methods">details</a>)
 						
 					</div>
 	<div class="info-box-body">
         		<!-- ========== Info from phpDoc block ========= -->
 <p class="short-description">This is the parent class for the SQL stores, which contains the  logic common to all of the SQL stores.</p>
-<p class="description"><p>The table names used are determined by the class variables  settings_table_name, associations_table_name, and  nonces_table_name.  To change the name of the tables used, pass new  table names into the constructor.</p><p>To create the tables with the proper schema, see the createTables  method.</p><p>This class shouldn't be used directly.  Use one of its subclasses  instead, as those contain the code necessary to use a specific  database.  If you're an OpenID integrator and you'd like to create  an SQL-driven store that wraps an application's database  abstraction, be sure to create a subclass of  <a href="../OpenID/Auth_OpenID_DatabaseConnection.html">Auth_OpenID_DatabaseConnection</a> that calls the application's  database abstraction calls.  Then, pass an instance of your new  database connection class to your SQLStore subclass constructor.</p><p>All methods other than the constructor and createTables should be  considered implementation details.</p></p>
+<p class="description"><p>The table names used are determined by the class variables  associations_table_name and nonces_table_name.  To change the name  of the tables used, pass new table names into the constructor.</p><p>To create the tables with the proper schema, see the createTables  method.</p><p>This class shouldn't be used directly.  Use one of its subclasses  instead, as those contain the code necessary to use a specific  database.  If you're an OpenID integrator and you'd like to create  an SQL-driven store that wraps an application's database  abstraction, be sure to create a subclass of  <a href="../OpenID/Auth_OpenID_DatabaseConnection.html">Auth_OpenID_DatabaseConnection</a> that calls the application's  database abstraction calls.  Then, pass an instance of your new  database connection class to your SQLStore subclass constructor.</p><p>All methods other than the constructor and createTables should be  considered implementation details.</p></p>
 	<ul class="tags">
 				<li><span class="field">author:</span> JanRain, Inc. &lt;<a href="mailto:openid@janrain.com">openid@janrain.com</a>&gt;</li>
 			</ul>
 		<p class="notes">
-			Located in <a class="field" href="_Auth---OpenID---SQLStore.php.html">/Auth/OpenID/SQLStore.php</a> (line <span class="field">57</span>)
+			Located in <a class="field" href="_Auth---OpenID---SQLStore.php.html">/Auth/OpenID/SQLStore.php</a> (line <span class="field">61</span>)
 		</p>
 		
 				
@@ -46,8 +45,7 @@
 		<div class="nav-bar">
 			<a href="#sec-description">Description</a> |
 			<span class="disabled">Descendents</span>
-			|												<a href="#sec-vars">Vars</a>
-								|															<a href="#sec-method-summary">Methods</a> (<a href="#sec-methods">details</a>)
+			|															<a href="#sec-method-summary">Methods</a> (<a href="#sec-methods">details</a>)
 							
 								</div>
 		<div class="info-box-body">
@@ -55,12 +53,6 @@
 				<tr>
 					<th class="class-table-header">Class</th>
 					<th class="class-table-header">Description</th>
-				</tr>
-								<tr>
-					<td style="padding-right: 2em"><a href="../OpenID/Auth_OpenID_MySQLStore.html">Auth_OpenID_MySQLStore</a></td>
-					<td>
-											An SQL store that uses MySQL as its backend.
-										</td>
 				</tr>
 								<tr>
 					<td style="padding-right: 2em"><a href="../OpenID/Auth_OpenID_PostgreSQLStore.html">Auth_OpenID_PostgreSQLStore</a></td>
@@ -72,6 +64,12 @@
 					<td style="padding-right: 2em"><a href="../OpenID/Auth_OpenID_SQLiteStore.html">Auth_OpenID_SQLiteStore</a></td>
 					<td>
 											An SQL store that uses SQLite as its backend.
+										</td>
+				</tr>
+								<tr>
+					<td style="padding-right: 2em"><a href="../OpenID/Auth_OpenID_MySQLStore.html">Auth_OpenID_MySQLStore</a></td>
+					<td>
+											An SQL store that uses MySQL as its backend.
 										</td>
 				</tr>
 							</table>
@@ -86,18 +84,15 @@
 		<div class="nav-bar">
 			<a href="#sec-description">Description</a> |
 							<a href="#sec-descendents">Descendents</a> |
-																		<a href="#sec-vars">Vars</a>
-				 
-				|
-						<span class="disabled">Methods</span> (<a href="#sec-methods">details</a>)
+												<span class="disabled">Methods</span> (<a href="#sec-methods">details</a>)
 		</div>
 		<div class="info-box-body">			
 			<div class="method-summary">
-																																																																																																																																																						
+																																																																																																																																														
 				<div class="method-definition">
 											<span class="method-result">Auth_OpenID_SQLStore</span>
 										<a href="#Auth_OpenID_SQLStore" title="details" class="method-name">Auth_OpenID_SQLStore</a>
-											(<span class="var-type">connection</span>&nbsp;<span class="var-name">$connection</span>, [<span class="var-type">string</span>&nbsp;<span class="var-name">$settings_table</span> = <span class="var-default">null</span>], [<span class="var-type">associations_table:</span>&nbsp;<span class="var-name">$associations_table</span> = <span class="var-default">null</span>], [<span class="var-type">nonces_table:</span>&nbsp;<span class="var-name">$nonces_table</span> = <span class="var-default">null</span>])
+											(<span class="var-type">connection</span>&nbsp;<span class="var-name">$connection</span>, [<span class="var-type">associations_table:</span>&nbsp;<span class="var-name">$associations_table</span> = <span class="var-default">null</span>], [<span class="var-type">nonces_table:</span>&nbsp;<span class="var-name">$nonces_table</span> = <span class="var-default">null</span>])
 									</div>
 														
 				<div class="method-definition">
@@ -132,19 +127,13 @@
 														
 				<div class="method-definition">
 											<span class="method-result">void</span>
-										<a href="#create_settings_table" title="details" class="method-name">create_settings_table</a>
-										()
-									</div>
-														
-				<div class="method-definition">
-											<span class="method-result">void</span>
 										<a href="#getAssociation" title="details" class="method-name">getAssociation</a>
 											(<span class="var-type"></span>&nbsp;<span class="var-name">$server_url</span>, [<span class="var-type"></span>&nbsp;<span class="var-name">$handle</span> = <span class="var-default">null</span>])
 									</div>
 														
 				<div class="method-definition">
 											<span class="method-result">void</span>
-										<a href="#getAuthKey" title="details" class="method-name">getAuthKey</a>
+										<a href="#getExpired" title="details" class="method-name">getExpired</a>
 										()
 									</div>
 														
@@ -193,38 +182,12 @@
 				<div class="method-definition">
 											<span class="method-result">void</span>
 										<a href="#useNonce" title="details" class="method-name">useNonce</a>
-											(<span class="var-type"></span>&nbsp;<span class="var-name">$nonce</span>)
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$server_url</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$timestamp</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$salt</span>)
 									</div>
 											</div>
 		</div>
 	</div>		
 
-	<a name="sec-vars"></a>
-	<div class="info-box">
-		<div class="info-box-title">Variables</div>
-		<div class="nav-bar">
-			<a href="#sec-description">Description</a> |
-							<a href="#sec-descendents">Descendents</a> |
-										<a href="#sec-var-summary">Vars</a> (<span class="disabled">details</span>)
-						
-			
-										| 
-									<a href="#sec-method-summary">Methods</a> (<a href="#sec-methods">details</a>)
-							
-					</div>
-		<div class="info-box-body">
-			
-							<h4>Inherited Variables</h4>
-				<A NAME='inherited_vars'><!-- --></A>
-									<p>Inherited from <span class="classname"><a href="../OpenID/Auth_OpenID_OpenIDStore.html">Auth_OpenID_OpenIDStore</a></span></p>
-					<blockquote>
-													<span class="var-title">
-								<span class="var-name"><a href="../OpenID/Auth_OpenID_OpenIDStore.html#var$AUTH_KEY_LEN">Auth_OpenID_OpenIDStore::$AUTH_KEY_LEN</a></span><br>
-							</span>
-											</blockquote> 
-										
-		</div>
-	</div>
 	
 	<a name="sec-methods"></a>
 	<div class="info-box">
@@ -232,8 +195,7 @@
 		<div class="nav-bar">
 			<a href="#sec-description">Description</a> |
 							<a href="#sec-descendents">Descendents</a> |
-															<a href="#sec-vars">Vars</a>
-																	<a href="#sec-method-summary">Methods</a> (<span class="disabled">details</span>)
+																<a href="#sec-method-summary">Methods</a> (<span class="disabled">details</span>)
 						
 		</div>
 		<div class="info-box-body">
@@ -253,16 +215,13 @@
 		<span class="method-name">
 			Auth_OpenID_SQLStore
 		</span>
-					(<span class="var-type">connection</span>&nbsp;<span class="var-name">$connection</span>, [<span class="var-type">string</span>&nbsp;<span class="var-name">$settings_table</span> = <span class="var-default">null</span>], [<span class="var-type">associations_table:</span>&nbsp;<span class="var-name">$associations_table</span> = <span class="var-default">null</span>], [<span class="var-type">nonces_table:</span>&nbsp;<span class="var-name">$nonces_table</span> = <span class="var-default">null</span>])
+					(<span class="var-type">connection</span>&nbsp;<span class="var-name">$connection</span>, [<span class="var-type">associations_table:</span>&nbsp;<span class="var-name">$associations_table</span> = <span class="var-default">null</span>], [<span class="var-type">nonces_table:</span>&nbsp;<span class="var-name">$nonces_table</span> = <span class="var-default">null</span>])
 			</div>
 	
 			<ul class="parameters">
 					<li>
 				<span class="var-type">connection</span>
 				<span class="var-name">$connection</span><span class="var-description">: This must be an established  connection to a database of the correct type for the SQLStore  subclass you're using.  This must either be an PEAR DB  connection handle or an instance of a subclass of  Auth_OpenID_DatabaseConnection.</span>			</li>
-					<li>
-				<span class="var-type">string</span>
-				<span class="var-name">$settings_table</span><span class="var-description">: This is an optional parameter to  specify the name of the table used for this store's settings.  The default value is 'oid_settings'.</span>			</li>
 					<li>
 				<span class="var-type">associations_table:</span>
 				<span class="var-name">$associations_table</span><span class="var-description">: This is an optional parameter to  specify the name of the table used for storing associations.  The default value is 'oid_associations'.</span>			</li>
@@ -277,7 +236,7 @@
 <div class="evenrow">
 	
 	<div class="method-header">
-		<span class="method-title">blobDecode</span> (line <span class="line-number">301</span>)
+		<span class="method-title">blobDecode</span> (line <span class="line-number">281</span>)
 	</div> 
 	
 	<!-- ========== Info from phpDoc block ========= -->
@@ -302,7 +261,7 @@
 <div class="oddrow">
 	
 	<div class="method-header">
-		<span class="method-title">blobEncode</span> (line <span class="line-number">306</span>)
+		<span class="method-title">blobEncode</span> (line <span class="line-number">286</span>)
 	</div> 
 	
 	<!-- ========== Info from phpDoc block ========= -->
@@ -327,7 +286,7 @@
 <div class="evenrow">
 	
 	<div class="method-header">
-		<span class="method-title">createTables</span> (line <span class="line-number">311</span>)
+		<span class="method-title">createTables</span> (line <span class="line-number">291</span>)
 	</div> 
 	
 	<!-- ========== Info from phpDoc block ========= -->
@@ -347,7 +306,7 @@
 <div class="oddrow">
 	
 	<div class="method-header">
-		<span class="method-title">create_assoc_table</span> (line <span class="line-number">335</span>)
+		<span class="method-title">create_assoc_table</span> (line <span class="line-number">314</span>)
 	</div> 
 	
 	<!-- ========== Info from phpDoc block ========= -->
@@ -367,7 +326,7 @@
 <div class="evenrow">
 	
 	<div class="method-header">
-		<span class="method-title">create_nonce_table</span> (line <span class="line-number">326</span>)
+		<span class="method-title">create_nonce_table</span> (line <span class="line-number">305</span>)
 	</div> 
 	
 	<!-- ========== Info from phpDoc block ========= -->
@@ -383,31 +342,11 @@
 		
 			
 	</div>
-<a name="methodcreate_settings_table" id="create_settings_table"><!-- --></a>
+<a name="methodgetAssociation" id="getAssociation"><!-- --></a>
 <div class="oddrow">
 	
 	<div class="method-header">
-		<span class="method-title">create_settings_table</span> (line <span class="line-number">344</span>)
-	</div> 
-	
-	<!-- ========== Info from phpDoc block ========= -->
-	
-	<div class="method-signature">
-		<span class="method-result">void</span>
-		<span class="method-name">
-			create_settings_table
-		</span>
-				()
-			</div>
-	
-		
-			
-	</div>
-<a name="methodgetAssociation" id="getAssociation"><!-- --></a>
-<div class="evenrow">
-	
-	<div class="method-header">
-		<span class="method-title">getAssociation</span> (line <span class="line-number">475</span>)
+		<span class="method-title">getAssociation</span> (line <span class="line-number">416</span>)
 	</div> 
 	
 	<!-- ========== Info from phpDoc block ========= -->
@@ -437,11 +376,11 @@
 					</dl>
 			
 	</div>
-<a name="methodgetAuthKey" id="getAuthKey"><!-- --></a>
-<div class="oddrow">
+<a name="methodgetExpired" id="getExpired"><!-- --></a>
+<div class="evenrow">
 	
 	<div class="method-header">
-		<span class="method-title">getAuthKey</span> (line <span class="line-number">370</span>)
+		<span class="method-title">getExpired</span> (line <span class="line-number">402</span>)
 	</div> 
 	
 	<!-- ========== Info from phpDoc block ========= -->
@@ -449,7 +388,7 @@
 	<div class="method-signature">
 		<span class="method-result">void</span>
 		<span class="method-name">
-			getAuthKey
+			getExpired
 		</span>
 				()
 			</div>
@@ -458,16 +397,16 @@
 			<hr class="separator" />
 		<div class="notes">Redefinition of:</div>
 		<dl>
-			<dt><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methodgetAuthKey">Auth_OpenID_OpenIDStore::getAuthKey()</a></dt>
-						<dd>This method returns a key used to sign the tokens, to ensure  that they haven't been tampered with in transit. It should  return the same key every time it is called. The key returned  should be AUTH_KEY_LEN bytes long.</dd>
+			<dt><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methodgetExpired">Auth_OpenID_OpenIDStore::getExpired()</a></dt>
+						<dd>Return all server URLs that have expired associations.</dd>
 					</dl>
 			
 	</div>
 <a name="methodisError" id="isError"><!-- --></a>
-<div class="evenrow">
+<div class="oddrow">
 	
 	<div class="method-header">
-		<span class="method-title">isError</span> (line <span class="line-number">177</span>)
+		<span class="method-title">isError</span> (line <span class="line-number">172</span>)
 	</div> 
 	
 	<!-- ========== Info from phpDoc block ========= -->
@@ -490,10 +429,10 @@
 			
 	</div>
 <a name="methodremoveAssociation" id="removeAssociation"><!-- --></a>
-<div class="oddrow">
+<div class="evenrow">
 	
 	<div class="method-header">
-		<span class="method-title">removeAssociation</span> (line <span class="line-number">458</span>)
+		<span class="method-title">removeAssociation</span> (line <span class="line-number">385</span>)
 	</div> 
 	
 	<!-- ========== Info from phpDoc block ========= -->
@@ -524,10 +463,10 @@
 			
 	</div>
 <a name="methodreset" id="reset"><!-- --></a>
-<div class="evenrow">
+<div class="oddrow">
 	
 	<div class="method-header">
-		<span class="method-title">reset</span> (line <span class="line-number">209</span>)
+		<span class="method-title">reset</span> (line <span class="line-number">204</span>)
 	</div> 
 	
 	<!-- ========== Info from phpDoc block ========= -->
@@ -551,10 +490,10 @@
 			
 	</div>
 <a name="methodresultToBool" id="resultToBool"><!-- --></a>
-<div class="oddrow">
+<div class="evenrow">
 	
 	<div class="method-header">
-		<span class="method-title">resultToBool</span> (line <span class="line-number">187</span>)
+		<span class="method-title">resultToBool</span> (line <span class="line-number">182</span>)
 	</div> 
 	
 	<!-- ========== Info from phpDoc block ========= -->
@@ -577,10 +516,10 @@
 			
 	</div>
 <a name="methodsetSQL" id="setSQL"><!-- --></a>
-<div class="evenrow">
+<div class="oddrow">
 	
 	<div class="method-header">
-		<span class="method-title">setSQL</span> (line <span class="line-number">201</span>)
+		<span class="method-title">setSQL</span> (line <span class="line-number">196</span>)
 	</div> 
 	
 	<!-- ========== Info from phpDoc block ========= -->
@@ -605,10 +544,10 @@
 				</ul>
 	</div>
 <a name="methodstoreAssociation" id="storeAssociation"><!-- --></a>
-<div class="oddrow">
+<div class="evenrow">
 	
 	<div class="method-header">
-		<span class="method-title">storeAssociation</span> (line <span class="line-number">412</span>)
+		<span class="method-title">storeAssociation</span> (line <span class="line-number">339</span>)
 	</div> 
 	
 	<!-- ========== Info from phpDoc block ========= -->
@@ -639,10 +578,10 @@
 			
 	</div>
 <a name="methodtableExists" id="tableExists"><!-- --></a>
-<div class="evenrow">
+<div class="oddrow">
 	
 	<div class="method-header">
-		<span class="method-title">tableExists</span> (line <span class="line-number">166</span>)
+		<span class="method-title">tableExists</span> (line <span class="line-number">161</span>)
 	</div> 
 	
 	<!-- ========== Info from phpDoc block ========= -->
@@ -664,10 +603,10 @@
 			
 	</div>
 <a name="methoduseNonce" id="useNonce"><!-- --></a>
-<div class="oddrow">
+<div class="evenrow">
 	
 	<div class="method-header">
-		<span class="method-title">useNonce</span> (line <span class="line-number">575</span>)
+		<span class="method-title">useNonce</span> (line <span class="line-number">487</span>)
 	</div> 
 	
 	<!-- ========== Info from phpDoc block ========= -->
@@ -677,20 +616,26 @@
 		<span class="method-name">
 			useNonce
 		</span>
-					(<span class="var-type"></span>&nbsp;<span class="var-name">$nonce</span>)
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$server_url</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$timestamp</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$salt</span>)
 			</div>
 	
 			<ul class="parameters">
 					<li>
 				<span class="var-type"></span>
-				<span class="var-name">$nonce</span>			</li>
+				<span class="var-name">$server_url</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$timestamp</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$salt</span>			</li>
 				</ul>
 		
 			<hr class="separator" />
 		<div class="notes">Redefinition of:</div>
 		<dl>
 			<dt><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methoduseNonce">Auth_OpenID_OpenIDStore::useNonce()</a></dt>
-						<dd>This method is called when the library is attempting to use a  nonce. If the nonce is in the store, this method removes it and  returns a value which evaluates as true. Otherwise it returns a  value which evaluates as false.</dd>
+						<dd>Called when using a nonce.</dd>
 					</dl>
 			
 	</div>
@@ -700,12 +645,10 @@
 					<p>Inherited From <span class="classname"><a href="../OpenID/Auth_OpenID_OpenIDStore.html">Auth_OpenID_OpenIDStore</a></span></p>
 					<blockquote>
 													<span class="method-name"><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methodgetAssociation">Auth_OpenID_OpenIDStore::getAssociation()</a></span><br>
-													<span class="method-name"><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methodgetAuthKey">Auth_OpenID_OpenIDStore::getAuthKey()</a></span><br>
-													<span class="method-name"><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methodisDumb">Auth_OpenID_OpenIDStore::isDumb()</a></span><br>
+													<span class="method-name"><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methodgetExpired">Auth_OpenID_OpenIDStore::getExpired()</a></span><br>
 													<span class="method-name"><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methodremoveAssociation">Auth_OpenID_OpenIDStore::removeAssociation()</a></span><br>
 													<span class="method-name"><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methodreset">Auth_OpenID_OpenIDStore::reset()</a></span><br>
 													<span class="method-name"><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methodstoreAssociation">Auth_OpenID_OpenIDStore::storeAssociation()</a></span><br>
-													<span class="method-name"><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methodstoreNonce">Auth_OpenID_OpenIDStore::storeNonce()</a></span><br>
 													<span class="method-name"><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methoduseNonce">Auth_OpenID_OpenIDStore::useNonce()</a></span><br>
 											</blockquote>
 										
@@ -714,7 +657,7 @@
 
 
 	<p class="notes" id="credit">
-		Documentation generated on Fri, 23 Mar 2007 10:36:27 -0700 by <a href="http://www.phpdoc.org" target="_blank">phpDocumentor 1.3.0</a>
+		Documentation generated on Thu, 05 Apr 2007 15:30:07 -0700 by <a href="http://www.phpdoc.org" target="_blank">phpDocumentor 1.3.0</a>
 	</p>
 	</div></body>
 </html>

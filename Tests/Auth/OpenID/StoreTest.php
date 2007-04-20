@@ -18,6 +18,7 @@
  */
 require_once 'Auth/OpenID/Association.php';
 require_once 'Auth/OpenID/CryptUtil.php';
+require_once 'Auth/OpenID/Nonce.php';
 require_once 'Auth/OpenID.php';
 require_once 'PHPUnit.php';
 
@@ -43,6 +44,7 @@ function _Auth_OpenID_mkdtemp()
  * This is the host where the SQL stores' databases should be created
  * and destroyed.
  */
+global $_Auth_OpenID_db_test_host;
 $_Auth_OpenID_db_test_host = 'dbtest';
 
 /**
@@ -81,14 +83,6 @@ class Tests_Auth_OpenID_StoreTest extends PHPUnit_TestCase {
     }
 
     /**
-     * Generates a nonce value.
-     */
-    function generateNonce()
-    {
-        return Auth_OpenID_CryptUtil::randomString(8, $this->allowed_nonce);
-    }
-
-    /**
      * Generates an association with the specified parameters.
      */
     function genAssoc($now, $issued = 0, $lifetime = 600)
@@ -105,26 +99,18 @@ class Tests_Auth_OpenID_StoreTest extends PHPUnit_TestCase {
     function _checkRetrieve(&$store, $url, $handle, $expected, $name = null)
     {
         $retrieved_assoc = $store->getAssociation($url, $handle);
-        if (($expected === null) || ($store->isDumb())) {
-            $this->assertNull($retrieved_assoc, "Retrieved association " .
-                              "was non-null");
+        if ($expected === null) {
+            $this->assertTrue($retrieved_assoc === null);
         } else {
-            if ($retrieved_assoc === null) {
-                $this->fail("$name: Got null when expecting " .
-                            $expected->serialize());
-            } else {
-                $this->assertEquals($expected->serialize(),
-                                    $retrieved_assoc->serialize(), $name);
-            }
+            $this->assertTrue($expected->equal($retrieved_assoc), $name);
         }
     }
 
     function _checkRemove(&$store, $url, $handle, $expected, $name = null)
     {
         $present = $store->removeAssociation($url, $handle);
-        $expectedPresent = (!$store->isDumb() && $expected);
-        $this->assertTrue((!$expectedPresent && !$present) ||
-                          ($expectedPresent && $present),
+        $this->assertTrue((!$expected && !$present) ||
+                          ($expected && $present),
                           $name);
     }
 
@@ -138,6 +124,7 @@ class Tests_Auth_OpenID_StoreTest extends PHPUnit_TestCase {
      */
     function _testStore($store)
     {
+        $this->assertTrue($store->getExpired() === array());
 
         // Association functions
         $now = time();
@@ -296,10 +283,10 @@ explicitly');
                               $assoc2, "(29)");
     }
 
-    function _checkUseNonce(&$store, $nonce, $expected, $msg=null)
+    function _checkUseNonce(&$store, $nonce, $expected, $server_url, $msg=null)
     {
-        $actual = $store->useNonce($nonce);
-        $expected = $store->isDumb() || $expected;
+        list($stamp, $salt) = Auth_OpenID_splitNonce($nonce);
+        $actual = $store->useNonce($server_url, $stamp, $salt);
         $val = ($actual && $expected) || (!$actual && !$expected);
         $this->assertTrue($val, "_checkUseNonce failed: $msg");
     }
@@ -308,43 +295,27 @@ explicitly');
     {
         // Nonce functions
 
-        // Random nonce (not in store)
-        $nonce1 = $this->generateNonce();
+        $server_url = 'http://www.myopenid.com/openid';
 
-        // A nonce is not present by default
-        $this->_checkUseNonce($store, $nonce1, false, 1);
+        foreach (array($server_url, '') as $url) {
+            // Random nonce (not in store)
+            $nonce1 = Auth_OpenID_mkNonce();
 
-        // Storing once causes useNonce to return true the first, and
-        // only the first, time it is called after the $store->
-        $store->storeNonce($nonce1);
-        $this->_checkUseNonce($store, $nonce1, true, 2);
-        $this->_checkUseNonce($store, $nonce1, false, 3);
-        $this->_checkUseNonce($store, $nonce1, false, 4);
+            // A nonce is not by default
+            $this->_checkUseNonce($store, $nonce1, true, $url, 1);
 
-        // Storing twice has the same effect as storing once.
-        $store->storeNonce($nonce1);
-        $store->storeNonce($nonce1);
-        $this->_checkUseNonce($store, $nonce1, true, 5);
-        $this->_checkUseNonce($store, $nonce1, false, 6);
-        $this->_checkUseNonce($store, $nonce1, false, 7);
+            // Once stored, cannot be stored again
+            $this->_checkUseNonce($store, $nonce1, false, $url, 2);
 
-        // Auth key functions
-
-        // There is no key to start with, so generate a new key and
-        // return it.
-        $key = $store->getAuthKey();
-
-        // The second time around should return the same as last time.
-        $key2 = $store->getAuthKey();
-        $this->assertEquals($key, $key2, "Auth keys differ");
-        $this->assertEquals(strlen($key), $store->AUTH_KEY_LEN,
-                            "Key length not equals AUTH_KEY_LEN");
+            // And using again has the same effect
+            $this->_checkUseNonce($store, $nonce1, false, $url, 3);
+        }
     }
 
     function test_memstore()
     {
         require_once 'Tests/Auth/OpenID/MemStore.php';
-        $store = new Tests_Auth_OpenID_MemStore('Bogus auth key      ');
+        $store = new Tests_Auth_OpenID_MemStore();
         $this->_testStore(&$store);
         $this->_testNonce(&$store);
     }
@@ -373,7 +344,9 @@ explicitly');
         // If the postgres extension isn't loaded or loadable, succeed
         // because we can't run the test.
         if (!(extension_loaded('pgsql') ||
-              @dl('pgsql.' . PHP_SHLIB_SUFFIX))) {
+              @dl('pgsql.so') ||
+              @dl('php_pgsql.dll'))) {
+            print "Warning: not testing PostGreSQL store";
             $this->pass();
             return;
         }
@@ -482,7 +455,9 @@ explicitly');
         // If the postgres extension isn't loaded or loadable, succeed
         // because we can't run the test.
         if (!(extension_loaded('sqlite') ||
-              @dl('sqlite.' . PHP_SHLIB_SUFFIX))) {
+              @dl('sqlite.so') ||
+              @dl('php_sqlite.dll'))) {
+            print "Warning: not testing SQLite store";
             $this->pass();
             return;
         }
@@ -525,6 +500,7 @@ explicitly');
         // because we can't run the test.
         if (!(extension_loaded('mysql') ||
               @dl('mysql.' . PHP_SHLIB_SUFFIX))) {
+            print "Warning: not testing MySQL store";
             $this->pass();
             return;
         }

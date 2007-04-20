@@ -31,13 +31,13 @@ function getServerURL()
     $path = $_SERVER['SCRIPT_NAME'];
     $host = $_SERVER['HTTP_HOST'];
     $port = $_SERVER['SERVER_PORT'];
-    $s = $_SERVER['HTTPS'] ? 's' : '';
+    $s = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] ? 's' : '';
     if (($s && $port == "443") || (!$s && $port == "80")) {
         $p = '';
     } else {
         $p = ':' . $port;
     }
-    
+
     return "http$s://$host$p$path";
 }
 
@@ -82,29 +82,18 @@ function getServer()
 {
     static $server = null;
     if (!isset($server)) {
-        $server =& new Auth_OpenID_Server(getOpenIDStore(), getOpenIDAuth());
+        $server =& new Auth_OpenID_Server(getOpenIDStore(),
+                                          buildURL());
     }
     return $server;
 }
 
 /**
- * Return whether the trust root is currently trusted
+ * Return a hashed form of the user's password
  */
-function isTrusted($identity_url, $trust_root)
+function hashPassword($password)
 {
-    // from config.php
-    global $trusted_sites;
-
-    if ($identity_url != getLoggedInUser()) {
-        return false;
-    }
-
-    if (in_array($trust_root, $trusted_sites)) {
-        return true;
-    }
-
-    $sites = getSessionSites();
-    return isset($sites[$trust_root]) && $sites[$trust_root];
+    return bin2hex(Auth_OpenID_SHA1($password));
 }
 
 /**
@@ -135,22 +124,6 @@ function setLoggedInUser($identity_url=null)
     }
 }
 
-function setSessionSites($sites=null)
-{
-    if (!isset($sites)) {
-        unset($_SESSION['session_sites']);
-    } else {
-        $_SESSION['session_sites'] = serialize($sites);
-    }
-}
-
-function getSessionSites()
-{
-    return isset($_SESSION['session_sites'])
-        ? unserialize($_SESSION['session_sites'])
-        : false;
-}
-
 function getRequestInfo()
 {
     return isset($_SESSION['request'])
@@ -179,6 +152,27 @@ function getSreg($identity)
 
     return $openid_sreg[$identity];
 
+}
+
+function idURL($identity)
+{
+    return buildURL('idpage') . "?user=" . $identity;
+}
+
+function idFromURL($url)
+{
+    if (strpos($url, 'idpage') === false) {
+        return null;
+    }
+
+    $parsed = parse_url($url);
+
+    $q = $parsed['query'];
+
+    $parts = array();
+    parse_str($q, $parts);
+
+    return @$parts['user'];
 }
 
 ?>

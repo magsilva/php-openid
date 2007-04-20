@@ -6,9 +6,10 @@
  */
 
 require_once "PHPUnit.php";
-require_once "Services/Yadis/XRDS.php";
+require_once "Auth/Yadis/XRDS.php";
 require_once "Auth/OpenID/Discover.php";
 
+global $__XRDS_BOILERPLATE;
 $__XRDS_BOILERPLATE = '<?xml version="1.0" encoding="UTF-8"?>
 <xrds:XRDS xmlns:xrds="xri://$xrds"
            xmlns="xri://$xrd*($v*2.0)"
@@ -20,6 +21,7 @@ $__XRDS_BOILERPLATE = '<?xml version="1.0" encoding="UTF-8"?>
 ';
 
 // Different sets of server URLs for use in the URI tag
+global $__server_url_options;
 $__server_url_options = array(
            array(), // This case should not generate an endpoint object
            array('http://server.url/'),
@@ -32,16 +34,17 @@ $__server_url_options = array(
 
 // A couple of example extension type URIs. These are not at all
 // official, but are just here for testing.
+global $__ext_types;
 $__ext_types = array(
                      'http://janrain.com/extension/blah',
                      'http://openid.net/sreg/1.0');
 
 // All valid combinations of Type tags that should produce an OpenID
 // endpoint
+global $__openid_types;
 $__openid_types = array(
-                        _OPENID_1_0_TYPE,
-                        _OPENID_1_1_TYPE,
-                        _OPENID_1_2_TYPE);
+                        Auth_OpenID_TYPE_1_0,
+                        Auth_OpenID_TYPE_1_1);
 
 $temp = array();
 foreach (__subsets($__ext_types) as $exts) {
@@ -52,9 +55,11 @@ foreach (__subsets($__ext_types) as $exts) {
     }
 }
 
+global $__type_uri_options;
 $__type_uri_options = $temp;
 
 // Range of valid Delegate tag values for generating test data
+global $__delegate_options;
 $__delegate_options = array(
                             null,
                             'http://vanity.domain/',
@@ -70,6 +75,7 @@ foreach ($__delegate_options as $delegate) {
 }
 
 // All combinations of valid URIs, Type URIs and Delegate tags
+global $__data;
 $__data = $temp;
 
 function _mkXRDS($services_str)
@@ -140,7 +146,7 @@ class Tests_Auth_OpenID_Tester extends PHPUnit_TestCase {
     {
         $this->uris = $uris;
         $this->type_uris = $type_uris;
-        $this->delegate = $delegate;
+        $this->local_id = $delegate;
         parent::PHPUnit_TestCase();
     }
 
@@ -151,14 +157,14 @@ class Tests_Auth_OpenID_Tester extends PHPUnit_TestCase {
         // Create an XRDS document to parse
         $services = _mkService($this->uris,
                                $this->type_uris,
-                               $this->delegate);
+                               $this->local_id);
         $this->xrds = _mkXRDS($services);
     }
 
     function runTest()
     {
         // Parse into endpoint objects that we will check
-        $xrds_object = Services_Yadis_XRDS::parseXRDS($this->xrds);
+        $xrds_object = Auth_Yadis_XRDS::parseXRDS($this->xrds);
 
         $endpoints = array();
 
@@ -183,10 +189,10 @@ class Tests_Auth_OpenID_Tester extends PHPUnit_TestCase {
             $seen_uris[] = $endpoint->server_url;
 
             // All endpoints will have same yadis_url
-            $this->assertEquals($this->yadis_url, $endpoint->identity_url);
+            $this->assertEquals($this->yadis_url, $endpoint->claimed_id);
 
             // and delegate
-            $this->assertEquals($this->delegate, $endpoint->delegate);
+            $this->assertEquals($this->local_id, $endpoint->local_id);
 
             // and types
             $actual_types = $endpoint->type_uris;

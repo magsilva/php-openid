@@ -1,5 +1,8 @@
 <?php
 
+define('Auth_OpenID_SHA256_SUPPORTED', false);
+define('Auth_OpenID_HMACSHA256_SUPPORTED', false);
+
 require_once 'Tests/TestDriver.php';
 require_once 'PHPUnit/TestResult.php';
 require_once 'Console/Getopt.php';
@@ -42,6 +45,8 @@ function microtime_float()
 }
 
 $longopts = array('no-math',
+                  'buggy-gmp',
+                  'no-curl',
                   'math-lib=',
                   'insecure-rand',
                   'thorough');
@@ -69,8 +74,11 @@ foreach ($flags as $flag) {
     case '--no-math':
         define('Auth_OpenID_NO_MATH_SUPPORT', true);
         break;
-    case '--math-lib':
-        $math_type[] = $value;
+    case '--buggy-gmp':
+        define('Auth_OpenID_BUGGY_GMP', true);
+        break;
+    case '--no-curl':
+        define('Auth_Yadis_CURL_OVERRIDE', true);
         break;
     case '--thorough':
         define('Tests_Auth_OpenID_thorough', true);
@@ -82,8 +90,11 @@ foreach ($flags as $flag) {
 }
 
 // ******** Math library selection ***********
-
-if ($math_type) {
+// XXX FIXME
+//     case '--math-lib':
+//         $math_type[] = $value;
+//         break;
+if ($math_type && false) {
     if (defined('Auth_OpenID_NO_MATH_SUPPORT')) {
         print "--no-math and --math-lib are mutually exclusive\n";
         exit(1);
@@ -92,7 +103,7 @@ if ($math_type) {
     $new_extensions = array();
     foreach ($math_type as $lib) {
         $found = false;
-        foreach ($_Auth_OpenID_math_extensions as $ext) {
+        foreach (Auth_OpenID_math_extensions() as $ext) {
             if ($ext['extension'] == $lib) {
                 $new_extensions[] = $ext;
                 $found = true;

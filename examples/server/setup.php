@@ -21,24 +21,23 @@ require_once "Auth/OpenID.php";
 /**
  * Data.
  */
-$store_types = array('Filesystem' => 'Auth_OpenID_FileStore',
-                     'LDAP' => 'Auth_OpenID_LDAPStore',				
-                     'MySQL' => 'Auth_OpenID_MySQLStore',
-                     'PostgreSQL' => 'Auth_OpenID_PostgreSQLStore',
-                     'SQLite' => 'Auth_OpenID_SQLiteStore');
 
-$auth_types = array('Array' => 'Auth_OpenID_ArrayAuth',
-                    'LDAP' => 'Auth_OpenID_LDAPAuth');
+$store_types = array("Filesystem" => "Auth_OpenID_FileStore",
+                     "MySQL" => "Auth_OpenID_MySQLStore",
+                     "PostgreSQL" => "Auth_OpenID_PostgreSQLStore",
+                     "SQLite" => "Auth_OpenID_SQLiteStore");
 
 /**
  * Main.
  */
+
 $messages = array();
 
 session_start();
 init_session();
 
-if (!check_session() || isset($_GET['add_openid'])) {
+if (!check_session() ||
+    isset($_GET['add_openid'])) {
     render_form();
 } else {
     print generate_config(isset($_GET['download']));
@@ -108,30 +107,18 @@ function check_session() {
             $messages[] = "No store type chosen.";
         } else {
             switch ($_SESSION['store_type']) {
-            case 'Filesystem':
+            case "Filesystem":
                 if (!$_SESSION['store_data']['fs_path']) {
-                    $messages[] = 'Please specify a filesystem store path.';
+                    $messages[] = "Please specify a filesystem store path.";
                 } else {
                   if (!check_open_basedir($_SESSION['store_data']['fs_path'])) {
-                    $messages[] = 'The filesystem store path violates PHP\'s <code>open_basedir</code> setting.';
+                    $messages[] = "The filesystem store path violates PHP's <code>open_basedir</code> setting.";
                     $bad_path = true;
                   }
                 }
                 break;
 
-            case 'LDAP':
-            	if (!$_SESSION['store_data']['server_name']) {
-            		$messages = 'Please specify the name of the LDAP server.';
-            	}
-            	if (!$_SESSION['store_data']['base_dn']) {
-            		$messages = 'Please specify the base directory name for the LDAP server.'; 
-            	}
-            	if (!$_SESSION['store_data']['user_filter']) {
-            		$messages = 'Please specify the object attribute that much match the username';
-            	}
-            	break;
-
-            case 'SQLite':
+            case "SQLite":
                 if (!$_SESSION['store_data']['sqlite_path']) {
                     $messages[] = "Please specify a SQLite database path.";
                 } else {
@@ -142,8 +129,6 @@ function check_session() {
                 }
                 break;
 
-			case 'MySQL':
-			case 'PostgreSQL':
             default:
                 if (!($_SESSION['store_data']['host'] &&
                       $_SESSION['store_data']['database'] &&
@@ -155,41 +140,23 @@ function check_session() {
         }
     }
 
+    if ($_SESSION['store_type'] &&
+        $_SESSION['server_url'] &&
+        (parse_url($_SESSION['server_url']) !== false) &&
+        ((($_SESSION['store_type'] == 'Filesystem') &&
+          $_SESSION['store_data']['fs_path']) ||
+         (($_SESSION['store_type'] == 'SQLite') &&
+          $_SESSION['store_data']['sqlite_path']) ||
+         ($_SESSION['store_data']['host'] &&
+          $_SESSION['store_data']['username'] &&
+          $_SESSION['store_data']['database'] &&
+          $_SESSION['store_data']['password'])) &&
+        !$bad_path) {
 
-    if (! $_SESSION['server_url'] || parse_url($_SESSION['server_url']) === false) {
-    	return false;
-    }
-    
-    if (! $_SESSION['store_type']) {
-    	return false;
-    }
-    
-    if ($_SESSION['store_type'] == 'Filesystem' && (! $_SESSION['store_data']['fs_path'] || $bad_path)) {
-    	return false;
-    }
-    
-    if ($_SESSION['store_type'] == 'SQLite' && (! $_SESSION['store_data']['sqlite_path'] || $bad_path)) {
-    	return false;
-    }
-    
-    if ($_SESSION['store_type'] == 'LDAP') {
-      	if (!$_SESSION['store_data']['server_name'] ||
-      	    ! $_SESSION['store_data']['base_dn'] ||
-      	    ! $_SESSION['store_data']['user_filter']) {
-      	    return false;
-   	    }
-	}
-    
-    if ($_SESSION['store_type'] == 'MySQL' || $_SESSION['store_type'] == 'PostgreSQL') {
-    	if (! $_SESSION['store_data']['host'] ||
-    	    ! $_SESSION['store_data']['username'] ||
-    	    ! $_SESSION['store_data']['database'] ||
-    	    ! $_SESSION['store_data']['password']) {
-    		return false;
-    	}
+        return true;
     }
 
-    return true;
+    return false;
 }
 
 function render_form() {
@@ -211,12 +178,6 @@ function render_form() {
     if (extension_loaded('sqlite') ||
         @dl('sqlite.' . PHP_SHLIB_SUFFIX)) {
       $sqlite_found = true;
-    }
-    
-    $ldap_found = false;
-    if (extension_loaded('ldap') ||
-    	@dl('ldap.' . PHP_SHLIB_SUFFIX)) {
-      $ldap_found = true;
     }
 
     $mysql_found = false;
@@ -262,7 +223,7 @@ div.store_fields {
 
 div.store_fields label.field {
  float: left;
- width: 2.35in;
+ width: 1.75in;
 }
 
 div.store_fields > div {
@@ -286,7 +247,7 @@ div.errors {
 
 <h2>OpenID Example Server Configuration</h2>
 
-<?
+<?php
 if ($messages) {
     print "<div class=\"errors\">";
     foreach ($messages as $m) {
@@ -308,13 +269,13 @@ configuration for use with the OpenID server example.
 
   <p>
   The server URL is the URL that points to the "server.php" file.  It
-  looks like your server URL should be <code><? print build_url(); ?></code>.
+  looks like your server URL should be <code><?php print build_url(); ?></code>.
   </p>
 
   <span class="label"><label for="i_server_url">Server URL:</label></span>
   <span>
     <input type="text" id="i_server_url" size="35" name="server_url"
-     value="<? print $_SESSION['server_url'] ?>">
+     value="<?php print $_SESSION['server_url'] ?>">
   </span>
 </div>
 
@@ -331,7 +292,7 @@ configuration for use with the OpenID server example.
   </span>
   <span>
     <input type="text" id="i_include_path" size="35" name="include_path"
-     value="<? print $_SESSION['include_path'] ?>">
+     value="<?php print $_SESSION['include_path'] ?>">
   </span>
 </div>
 
@@ -347,210 +308,72 @@ configuration for use with the OpenID server example.
 
     <div>
       <input type="radio" name="store_type" value="Filesystem"
-       id="i_filesystem"<? if ($_SESSION['store_type'] == 'Filesystem') { print " CHECKED"; } ?>>
+       id="i_filesystem"<?php if ($_SESSION['store_type'] == 'Filesystem') { print " CHECKED"; } ?>>
       <label for="i_filesystem">Filesystem</label>
       <div>
         <label for="i_fs_path" class="field">Filesystem path:</label>
         <input type="text" name="fs_path" id="i_fs_path"
-         value="<? print $_SESSION['store_data']['fs_path']; ?>">
-        <? print $basedir_msg; ?>
+         value="<?php print $_SESSION['store_data']['fs_path']; ?>">
+        <?php print $basedir_msg; ?>
       </div>
     </div>
 
-<? if ($sqlite_found) { ?>
+<?php if ($sqlite_found) { ?>
     <div>
       <input type="radio" name="store_type" value="SQLite"
-       id="i_sqlite"<? if ($_SESSION['store_type'] == 'SQLite') { print " CHECKED"; } ?>>
+       id="i_sqlite"<?php if ($_SESSION['store_type'] == 'SQLite') { print " CHECKED"; } ?>>
       <label for="i_sqlite">SQLite</label>
       <div>
-        <label for="i_sqlite_path" class="field">Database path:</label>
-        <input type="text" value="<? print $_SESSION['store_data']['sqlite_path']; ?>"
+        <label for="i_sqlite_path" class="field">SQLite database path:</label>
+        <input type="text" value="<?php print $_SESSION['store_data']['sqlite_path']; ?>"
          name="sqlite_path" id="i_sqlite_path">
-        <? print $basedir_msg; ?>
+        <?php print $basedir_msg; ?>
       </div>
     </div>
-<? } ?>
+<?php } ?>
 
 
-<? if ($ldap_found) { ?>
-    <div>
-      <input type="radio" name="store_type" value="LDAP"
-       id="i_ldap"<? if ($_SESSION['store_type'] == 'LDAP') { print " CHECKED"; } ?>>
-      <label for="i_ldap">LDAP</label>
-      <div>
-        <label for="i_ldap_server_name" class="field">Server name:</label>
-        <input type="text" value="<? print $_SESSION['store_data']['server_name']; ?>"
-         name="server_name" id="i_ldap_server_name">
-        <? print $basedir_msg; ?>
-      </div>
-      <div>
-        <label for="i_ldap_base_dn" class="field">Base directory:</label>
-        <input type="text" value="<? print $_SESSION['store_data']['base_dn']; ?>"
-         name="base_dn" id="i_ldap_base_dn">
-        <? print $basedir_msg; ?>
-      </div>
-      <div>
-        <label for="i_ldap_bind_username" class="field">Bind username (optional):</label>
-        <input type="text" value="<? print $_SESSION['store_data']['bind_username']; ?>"
-         name="bind_username" id="i_ldap_bind_username">
-        <? print $basedir_msg; ?>
-      </div>
-      <div>
-        <label for="i_ldap_bind_password" class="field">Bind password (optional):</label>
-        <input type="text" value="<? print $_SESSION['store_data']['bind_password']; ?>"
-         name="filter" id="i_ldap_bind_password">
-        <? print $basedir_msg; ?>
-      </div>
-      <div>
-        <label for="i_ldap_user_filter" class="field">User filter (optional):</label>
-        <input type="text" value="<? print $_SESSION['store_data']['user_filter']; ?>"
-         name="user_filter" id="i_ldap_user_filter">
-        <? print $basedir_msg; ?>
-      </div>
-    </div>
-<? } ?>
-
-
-
-<? if ($mysql_found || $pgsql_found) { ?>
+<?php if ($mysql_found || $pgsql_found) { ?>
     <div>
 
-<? if ($mysql_found) { ?>
+<?php if ($mysql_found) { ?>
       <input type="radio" name="store_type" value="MySQL"
-       id="i_mysql"<? if ($_SESSION['store_type'] == 'MySQL') { print " CHECKED"; } ?>>
+       id="i_mysql"<?php if ($_SESSION['store_type'] == 'MySQL') { print " CHECKED"; } ?>>
       <label for="i_mysql">MySQL</label>
-<? } ?>
+<?php } ?>
 
-<? if ($pgsql_found) { ?>
+<?php if ($pgsql_found) { ?>
       <input type="radio" name="store_type" value="PostgreSQL"
-       id="i_pgsql"<? if ($_SESSION['store_type'] == 'PostgreSQL') { print " CHECKED"; } ?>>
+       id="i_pgsql"<?php if ($_SESSION['store_type'] == 'PostgreSQL') { print " CHECKED"; } ?>>
       <label for="i_pgsql">PostgreSQL</label>
-<? } ?>
+<?php } ?>
 
       <div>
         <label for="i_m_host" class="field">Host:</label>
-        <input type="text" value="<? print $_SESSION['store_data']['host']; ?>" name="host" id="i_m_host">
+        <input type="text" value="<?php print $_SESSION['store_data']['host']; ?>" name="host" id="i_m_host">
       </div>
       <div>
         <label for="i_m_database" class="field">Database:</label>
-        <input value="<? print $_SESSION['store_data']['database']; ?>" type="text" name="database" id="i_m_database">
+        <input value="<?php print $_SESSION['store_data']['database']; ?>" type="text" name="database" id="i_m_database">
       </div>
       <div>
         <label for="i_m_username" class="field">Username:</label>
-        <input type="text" name="username" id="i_m_username" value="<? print $_SESSION['store_data']['username']; ?>">
+        <input type="text" name="username" id="i_m_username" value="<?php print $_SESSION['store_data']['username']; ?>">
       </div>
       <div>
         <label for="i_m_password" class="field">Password:</label>
-        <input type="password" name="password" id="i_m_password" value="<? print $_SESSION['store_data']['password']; ?>">
+        <input type="password" name="password" id="i_m_password" value="<?php print $_SESSION['store_data']['password']; ?>">
       </div>
     </div>
-<? } ?>
+<?php } ?>
 </div>
-</div>
-
-
-
-<div>
-<p>Your OpenID server will need to know what URLs it can authenticate. Supply
-URLs and passwords here.</p>
-
-<span class="label">OpenID URLs to serve:</span>
-<div class="store_fields">
-<?
-if ($_SESSION['users']) {
-   print "<div><table><tr><th>OpenID URL</th><th>Password Hash</th></tr>";
-   foreach ($_SESSION['users'] as $url => $p) {
-       print "<tr><td>".$url."</td><td>".$p."</td></tr>";
-   }
-   print "</table></div>";
-}?>
-	<div>
-		<span>Add an OpenID:</span>
-	<div>
-		<label for="i_add_user" class="field">OpenID URL:</label><input type="text" name="openid_url" id="i_add_user">
-	</div>
-    <div>
-		<label for="i_p1" class="field">Password:</label><input type="password" name="p1" id="i_p1">
-    </div>
-    <div>
-		<label for="i_p2" class="field">Password (confirm):</label><input type="password" name="p2" id="i_p2">
-    </div>
-	<input type="submit" name="add_openid" value="Add OpenID">
-</div>
-</div>
-
-<? if ($ldap_found) { ?>
-    <div>
-      <input type="radio" name="store_type" value="LDAP"
-       id="i_ldap"<? if ($_SESSION['store_type'] == 'LDAP') { print " CHECKED"; } ?>>
-      <label for="i_ldap">LDAP</label>
-      <div>
-        <label for="i_ldap_server_name" class="field">Server name:</label>
-        <input type="text" value="<? print $_SESSION['store_data']['server_name']; ?>"
-         name="server_name" id="i_ldap_server_name">
-        <? print $basedir_msg; ?>
-      </div>
-      <div>
-        <label for="i_ldap_base_dn" class="field">Base directory:</label>
-        <input type="text" value="<? print $_SESSION['store_data']['base_dn']; ?>"
-         name="base_dn" id="i_ldap_base_dn">
-        <? print $basedir_msg; ?>
-      </div>
-      <div>
-        <label for="i_ldap_bind_username" class="field">Bind username (optional):</label>
-        <input type="text" value="<? print $_SESSION['store_data']['bind_username']; ?>"
-         name="bind_username" id="i_ldap_bind_username">
-        <? print $basedir_msg; ?>
-      </div>
-      <div>
-        <label for="i_ldap_bind_password" class="field">Bind password (optional):</label>
-        <input type="text" value="<? print $_SESSION['store_data']['bind_password']; ?>"
-         name="filter" id="i_ldap_bind_password">
-        <? print $basedir_msg; ?>
-      </div>
-      <div>
-        <label for="i_ldap_user_filter" class="field">User filter (optional):</label>
-        <input type="text" value="<? print $_SESSION['store_data']['user_filter']; ?>"
-         name="user_filter" id="i_ldap_user_filter">
-        <? print $basedir_msg; ?>
-      </div>
-    </div>
-<? } ?>
-</div>
-
-<div>
-
-  <p>
-  Your OpenID server can be configured to trust a set of sites by default.  Enter those here.
-  </p>
-
-  <span class="label">Trusted sites:</span>
-
-  <div class="store_fields">
-<?
-if ($_SESSION['trust_roots']) {
-    print "<div><table><tr><th>Trusted site URL</th></tr>";
-    foreach ($_SESSION['trust_roots'] as $url) {
-        print "<tr><td>".$url."</td></tr>";
-    }
-    print "</table></div>";
-}
-?>
-   <div>
-    <span>Add a trusted site:</span>
-    <div>
-      <label for="i_tr" class="field">Trusted site URL:</label><input type="text" name="trust_root" id="i_tr">
-    </div>
-   </div>
-
-  </div>
 </div>
 
 <input type="submit" name="generate" value="Generate Configuration">
 </form>
 </body>
 </html>
-<?
+<?php
 }
 
 function init_session() {
@@ -572,14 +395,6 @@ function init_session() {
         $_SESSION['store_data'] = array();
     }
 
-    if (!isset($_SESSION['users'])) {
-        $_SESSION['users'] = array();
-    }
-
-    if (!isset($_SESSION['trust_roots'])) {
-        $_SESSION['trust_roots'] = array();
-    }
-
     foreach (array('server_url', 'include_path', 'store_type') as $field) {
         if (array_key_exists($field, $_GET)) {
             $_SESSION[$field] = $_GET[$field];
@@ -591,46 +406,15 @@ function init_session() {
             $_SESSION['store_data'][$field] = $_GET[$field];
         }
     }
-
-    foreach (array('server_name', 'base_dn', 'bind_username', 'bind_password', 'user_filter') as $field) {
-        if (array_key_exists($field, $_GET)) {
-            $_SESSION['store_data'][$field] = $_GET[$field];
-        }
-    }
-
-    if ($_GET &&
-        isset($_GET['add_openid']) &&
-        isset($_GET['openid_url']) &&
-        isset($_GET['p1']) &&
-        isset($_GET['p2']) &&
-        $_GET['p1'] == $_GET['p2'] &&
-        $_GET['p1']) {
-
-        if (check_url($_GET['openid_url'])) {
-            $normalized = Auth_OpenID::normalizeUrl($_GET['openid_url']);
-            $_SESSION['users'][$normalized] = sha1($_GET['p1']);
-        } else {
-            $messages[] = "Cannot add OpenID URL; '".$_GET['openid_url']."' doesn't look like a URL.";
-        }
-
-    } else if ($_GET &&
-               isset($_GET['trust_root']) &&
-               $_GET['trust_root']) {
-        if (!in_array($_GET['trust_root'], $_SESSION['trust_roots'])) {
-            $_SESSION['trust_roots'][] = $_GET['trust_root'];
-        }
-    } else if ($_GET &&
-               isset($_GET['del_user'])) {
-        unset($_SESSION['users'][$_GET['del_user']]);
-    }
 }
 
 function generate_config($download = false) {
 
     if ($download) {
         // Emit headers to force browser download.
-        header('Content-type: text/plain');
-        header('Content-disposition: attachment; filename=config.php');
+        header("Content-type: text/plain");
+        header("Content-disposition: attachment; filename=config.php");
+        print "<?php\n";
     } else {
 ?>
 <html>
@@ -639,7 +423,7 @@ function generate_config($download = false) {
 <h2>OpenID Example Server Configuration</h2>
 
 <p>
-Put the following text into <strong><? print dirname(__FILE__); print DIRECTORY_SEPARATOR; ?>config.php</strong>.
+Put the following text into <strong><?php print dirname(__FILE__); print DIRECTORY_SEPARATOR; ?>config.php</strong>.
 </p>
 
 <p>
@@ -651,18 +435,19 @@ Put the following text into <strong><? print dirname(__FILE__); print DIRECTORY_
 </p>
 
 <pre style="border: 1px solid gray; background: #eee; padding: 5px;">
-<?
+<?php
+print "&lt;?php\n";
 }
 ?>
-<? if ($_SESSION['include_path']) { ?>
+<?php if ($_SESSION['include_path']) { ?>
 /**
  * Set any extra include paths needed to use the library
  */
-set_include_path(get_include_path() . PATH_SEPARATOR . "<?
+set_include_path(get_include_path() . PATH_SEPARATOR . "<?php
 print $_SESSION['include_path'];
 ?>");
 
-<? } ?>
+<?php } ?>
 /**
  * The URL for the server.
  *
@@ -672,7 +457,9 @@ print $_SESSION['include_path'];
  *
  * This must be a full URL.
  */
-$server_url = "<? print $_SESSION['server_url']; ?>";
+$server_url = "<?php
+print $_SESSION['server_url'];
+?>";
 
 /**
  * Initialize an OpenID store
@@ -682,148 +469,88 @@ $server_url = "<? print $_SESSION['server_url']; ?>";
  */
 function getOpenIDStore()
 {
-<?
+    <?php
+
     switch ($_SESSION['store_type']) {
-    case 'Filesystem':
-        print "require_once 'Auth/OpenID/FileStore.php';\n";
-        print "return new Auth_OpenID_FileStore('" . $_SESSION['store_data']['fs_path'] . "');\n";
+    case "Filesystem":
+
+        print "require_once \"Auth/OpenID/FileStore.php\";\n    ";
+        print "return new Auth_OpenID_FileStore(\"".$_SESSION['store_data']['fs_path']."\");\n";
         break;
 
-    case 'SQLite':
-        print "require_once 'Auth/OpenID/SQLiteStore.php';\n";
-        print "return new Auth_OpenID_SQLiteStore('" . $_SESSION['store_data']['sqlite_path'] . "');\n";
+    case "SQLite":
+
+        print "require_once \"Auth/OpenID/SQLiteStore.php\";\n    ";
+        print "return new Auth_OpenID_SQLiteStore(\"".$_SESSION['store_data']['sqlite_path']."\");\n";
         break;
 
-    case 'LDAP':
-        print "require_once 'Auth/OpenID/LDAPStore.php';\n";
-        print "return new Auth_OpenID_LDAPStore('" .
-        	$_SESSION['store_data']['server_name'] . ', ' .
-        	$_SESSION['store_data']['base_dn'] . ', ' .
-        	$_SESSION['store_data']['bind_username'] . ', ' .
-        	$_SESSION['store_data']['bind_password'] . ', ' .
-        	$_SESSION['store_data']['user_filter'] . "');\n";
-        break;
+    case "MySQL":
 
-    case 'MySQL':
-?>
-        require_once 'Auth/OpenID/MySQLStore.php';
-        require_once 'DB.php';
-        
-        $dsn = array(
+        ?>require_once 'Auth/OpenID/MySQLStore.php';
+    require_once 'DB.php';
+
+    $dsn = array(
                  'phptype'  => 'mysql',
-                 'username' => '<? print $_SESSION['store_data']['username']; ?>',
-                 'password' => '<? print $_SESSION['store_data']['password']; ?>',
-                 'hostspec' => '<? print $_SESSION['store_data']['host']; ?>'
+                 'username' => '<?php print $_SESSION['store_data']['username']; ?>',
+                 'password' => '<?php print $_SESSION['store_data']['password']; ?>',
+                 'hostspec' => '<?php print $_SESSION['store_data']['host']; ?>'
                  );
-        $db =& DB::connect($dsn);
-       
-        if (PEAR::isError($db)) {
-            return null;
-        }
 
-        $db->query("USE <? print $_SESSION['store_data']['database']; ?>");
+    $db =& DB::connect($dsn);
+
+    if (PEAR::isError($db)) {
+        return null;
+    }
+
+    $db->query("USE <?php print $_SESSION['store_data']['database']; ?>");
         
-        return new Auth_OpenID_MySQLStore($db);
-<?
+    $s =& new Auth_OpenID_MySQLStore($db);
+
+    $s->createTables();
+
+    return $s;
+<?php
         break;
 
     case "PostgreSQL":
-?>
-        require_once 'Auth/OpenID/PostgreSQLStore.php';
-        require_once 'DB.php';
 
-        $dsn = array(
+        ?>require_once 'Auth/OpenID/PostgreSQLStore.php';
+    require_once 'DB.php';
+
+    $dsn = array(
                  'phptype'  => 'pgsql',
-                 'username' => '<? print $_SESSION['store_data']['username']; ?>',
-                 'password' => '<? print $_SESSION['store_data']['password']; ?>',
-                 'hostspec' => '<? print $_SESSION['store_data']['host']; ?>',
-                 'database' => '<? print $_SESSION['store_data']['database']; ?>'
+                 'username' => '<?php print $_SESSION['store_data']['username']; ?>',
+                 'password' => '<?php print $_SESSION['store_data']['password']; ?>',
+                 'hostspec' => '<?php print $_SESSION['store_data']['host']; ?>',
+                 'database' => '<?php print $_SESSION['store_data']['database']; ?>'
                  );
 
-         $db =& DB::connect($dsn);
+    $db =& DB::connect($dsn);
 
-         if (PEAR::isError($db)) {
-             return null;
-         }
+    if (PEAR::isError($db)) {
+        return null;
+    }
 
-         return new Auth_OpenID_PostgreSQLStore($db);
-<?
+    $s =& new Auth_OpenID_PostgreSQLStore($db);
+
+    $s->createTables();
+
+    return $s;
+<?php
         break;
-}
-?>
-}
-
-
-/**
- * Initialize an OpenID authentication mechanism
- *
- * @return object $auth an instance of OpenID auth (see the
- * documentation for how to create one)
- */
-function getOpenIDAuth()
-{
-<?
-    switch ($_SESSION['auth_type']) {
-	    case 'Array':
-?>
-$openid_users = array(<?
-$i = 0;
-foreach ($_SESSION['users'] as $url => $hash) {
-    $i++;
-    print "\n    '$url' => '$hash'";
-    if ($i < count($_SESSION['users'])) {
-        print ",";
     }
-}
-?>
-);
-<?
-    	    print "require_once 'Auth/OpenID/ArrayAuth.php';\n";
-        	print "return new Auth_OpenID_ArrayAuth(\$openid_users);\n";
-        	break;
 
-    	case 'LDAP':
-        	print "require_once 'Auth/OpenID/LDAPAuth.php';\n";
-        	print "return new Auth_OpenID_LDAPAuth('" .
-        		$_SESSION['store_data']['principal_format'] . ', ' .
-        		$_SESSION['store_data']['server_name'] . ', ' .
-        		$_SESSION['store_data']['base_dn'] . ', ' .
-        		$_SESSION['store_data']['bind_username'] . ', ' .
-        		$_SESSION['store_data']['bind_password'] . ', ' .
-        		$_SESSION['store_data']['user_filter'] . "');\n";
-        	break;
-    }
-?>
+    ?>
 }
 
-
-/**
- * Trusted sites is an array of trust roots.
- *
- * Sites in this list will not have to be approved by the user in
- * order to be used. It is OK to leave this value as-is.
- *
- * In a more robust server, this should be a per-user setting.
- */
-$trusted_sites = array(<?
-$i = 0;
-foreach ($_SESSION['trust_roots'] as $url) {
-    $i++;
-    print "\n    '$url'";
-    if ($i < count($_SESSION['trust_roots'])) {
-        print ",";
-    }
-}
-?>
-
-);
-<?
+<?php
+    print "?>";
     if (!$download) {
 ?>
 </pre>
 </body>
 </html>
-<?
+<?php
       }
     } // end function generate_config ()
 ?>

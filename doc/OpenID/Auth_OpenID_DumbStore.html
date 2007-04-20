@@ -16,8 +16,7 @@
 	<div class="info-box-title">Description</div>
 	<div class="nav-bar">
 					<span class="disabled">Description</span> |
-													<a href="#sec-vars">Vars</a>
-						|											<a href="#sec-method-summary">Methods</a> (<a href="#sec-methods">details</a>)
+															<a href="#sec-method-summary">Methods</a> (<a href="#sec-methods">details</a>)
 						
 					</div>
 	<div class="info-box-body">
@@ -47,14 +46,11 @@
 		<div class="info-box-title">Method Summary</span></div>
 		<div class="nav-bar">
 			<a href="#sec-description">Description</a> |
-																		<a href="#sec-vars">Vars</a>
-				 
-				|
-						<span class="disabled">Methods</span> (<a href="#sec-methods">details</a>)
+												<span class="disabled">Methods</span> (<a href="#sec-methods">details</a>)
 		</div>
 		<div class="info-box-body">			
 			<div class="method-summary">
-																																																																														
+																																																														
 				<div class="method-definition">
 											<span class="method-result">Auth_OpenID_DumbStore</span>
 										<a href="#Auth_OpenID_DumbStore" title="details" class="method-name">Auth_OpenID_DumbStore</a>
@@ -75,12 +71,6 @@
 														
 				<div class="method-definition">
 											<span class="method-result">void</span>
-										<a href="#isDumb" title="details" class="method-name">isDumb</a>
-										()
-									</div>
-														
-				<div class="method-definition">
-											<span class="method-result">void</span>
 										<a href="#removeAssociation" title="details" class="method-name">removeAssociation</a>
 											(<span class="var-type"></span>&nbsp;<span class="var-name">$server_url</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$handle</span>)
 									</div>
@@ -93,58 +83,26 @@
 														
 				<div class="method-definition">
 											<span class="method-result">void</span>
-										<a href="#storeNonce" title="details" class="method-name">storeNonce</a>
-											(<span class="var-type"></span>&nbsp;<span class="var-name">$nonce</span>)
-									</div>
-														
-				<div class="method-definition">
-											<span class="method-result">void</span>
 										<a href="#useNonce" title="details" class="method-name">useNonce</a>
-											(<span class="var-type"></span>&nbsp;<span class="var-name">$nonce</span>)
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$server_url</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$timestamp</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$salt</span>)
 									</div>
 											</div>
 		</div>
 	</div>		
 
-	<a name="sec-vars"></a>
-	<div class="info-box">
-		<div class="info-box-title">Variables</div>
-		<div class="nav-bar">
-			<a href="#sec-description">Description</a> |
-										<a href="#sec-var-summary">Vars</a> (<span class="disabled">details</span>)
-						
-			
-										| 
-									<a href="#sec-method-summary">Methods</a> (<a href="#sec-methods">details</a>)
-							
-					</div>
-		<div class="info-box-body">
-			
-							<h4>Inherited Variables</h4>
-				<A NAME='inherited_vars'><!-- --></A>
-									<p>Inherited from <span class="classname"><a href="../OpenID/Auth_OpenID_OpenIDStore.html">Auth_OpenID_OpenIDStore</a></span></p>
-					<blockquote>
-													<span class="var-title">
-								<span class="var-name"><a href="../OpenID/Auth_OpenID_OpenIDStore.html#var$AUTH_KEY_LEN">Auth_OpenID_OpenIDStore::$AUTH_KEY_LEN</a></span><br>
-							</span>
-											</blockquote> 
-										
-		</div>
-	</div>
 	
 	<a name="sec-methods"></a>
 	<div class="info-box">
 		<div class="info-box-title">Methods</div>
 		<div class="nav-bar">
 			<a href="#sec-description">Description</a> |
-															<a href="#sec-vars">Vars</a>
-																	<a href="#sec-method-summary">Methods</a> (<span class="disabled">details</span>)
+																<a href="#sec-method-summary">Methods</a> (<span class="disabled">details</span>)
 						
 		</div>
 		<div class="info-box-body">
 			<A NAME='method_detail'></A>
 <a name="methodAuth_OpenID_DumbStore" id="Auth_OpenID_DumbStore"><!-- --></a>
-<div class="oddrow">
+<div class="evenrow">
 	
 	<div class="method-header">
 		<span class="method-title">Constructor Auth_OpenID_DumbStore</span> (line <span class="line-number">53</span>)
@@ -171,7 +129,7 @@
 			
 	</div>
 <a name="methodgetAssociation" id="getAssociation"><!-- --></a>
-<div class="evenrow">
+<div class="oddrow">
 	
 	<div class="method-header">
 		<span class="method-title">getAssociation</span> (line <span class="line-number">68</span>)
@@ -206,10 +164,10 @@
 			
 	</div>
 <a name="methodgetAuthKey" id="getAuthKey"><!-- --></a>
-<div class="oddrow">
+<div class="evenrow">
 	
 	<div class="method-header">
-		<span class="method-title">getAuthKey</span> (line <span class="line-number">101</span>)
+		<span class="method-title">getAuthKey</span> (line <span class="line-number">94</span>)
 	</div> 
 	
 	<!-- ========== Info from phpDoc block ========= -->
@@ -224,39 +182,6 @@
 			</div>
 	
 		
-			<hr class="separator" />
-		<div class="notes">Redefinition of:</div>
-		<dl>
-			<dt><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methodgetAuthKey">Auth_OpenID_OpenIDStore::getAuthKey()</a></dt>
-						<dd>This method returns a key used to sign the tokens, to ensure  that they haven't been tampered with in transit. It should  return the same key every time it is called. The key returned  should be AUTH_KEY_LEN bytes long.</dd>
-					</dl>
-			
-	</div>
-<a name="methodisDumb" id="isDumb"><!-- --></a>
-<div class="evenrow">
-	
-	<div class="method-header">
-		<span class="method-title">isDumb</span> (line <span class="line-number">110</span>)
-	</div> 
-	
-	<!-- ========== Info from phpDoc block ========= -->
-<p class="short-description">This store is a dumb mode store, so this method is overridden  to return true.</p>
-	
-	<div class="method-signature">
-		<span class="method-result">void</span>
-		<span class="method-name">
-			isDumb
-		</span>
-				()
-			</div>
-	
-		
-			<hr class="separator" />
-		<div class="notes">Redefinition of:</div>
-		<dl>
-			<dt><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methodisDumb">Auth_OpenID_OpenIDStore::isDumb()</a></dt>
-						<dd>This method must return true if the store is a dumb-mode-style  store. Unlike all other methods in this class, this one  provides a default implementation, which returns false.</dd>
-					</dl>
 			
 	</div>
 <a name="methodremoveAssociation" id="removeAssociation"><!-- --></a>
@@ -329,43 +254,11 @@
 					</dl>
 			
 	</div>
-<a name="methodstoreNonce" id="storeNonce"><!-- --></a>
+<a name="methoduseNonce" id="useNonce"><!-- --></a>
 <div class="oddrow">
 	
 	<div class="method-header">
-		<span class="method-title">storeNonce</span> (line <span class="line-number">84</span>)
-	</div> 
-	
-	<!-- ========== Info from phpDoc block ========= -->
-<p class="short-description">This implementation does nothing.</p>
-	
-	<div class="method-signature">
-		<span class="method-result">void</span>
-		<span class="method-name">
-			storeNonce
-		</span>
-					(<span class="var-type"></span>&nbsp;<span class="var-name">$nonce</span>)
-			</div>
-	
-			<ul class="parameters">
-					<li>
-				<span class="var-type"></span>
-				<span class="var-name">$nonce</span>			</li>
-				</ul>
-		
-			<hr class="separator" />
-		<div class="notes">Redefinition of:</div>
-		<dl>
-			<dt><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methodstoreNonce">Auth_OpenID_OpenIDStore::storeNonce()</a></dt>
-						<dd>Stores a nonce. This is used by the consumer to prevent replay  attacks.</dd>
-					</dl>
-			
-	</div>
-<a name="methoduseNonce" id="useNonce"><!-- --></a>
-<div class="evenrow">
-	
-	<div class="method-header">
-		<span class="method-title">useNonce</span> (line <span class="line-number">93</span>)
+		<span class="method-title">useNonce</span> (line <span class="line-number">86</span>)
 	</div> 
 	
 	<!-- ========== Info from phpDoc block ========= -->
@@ -376,20 +269,26 @@
 		<span class="method-name">
 			useNonce
 		</span>
-					(<span class="var-type"></span>&nbsp;<span class="var-name">$nonce</span>)
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$server_url</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$timestamp</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$salt</span>)
 			</div>
 	
 			<ul class="parameters">
 					<li>
 				<span class="var-type"></span>
-				<span class="var-name">$nonce</span>			</li>
+				<span class="var-name">$server_url</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$timestamp</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$salt</span>			</li>
 				</ul>
 		
 			<hr class="separator" />
 		<div class="notes">Redefinition of:</div>
 		<dl>
 			<dt><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methoduseNonce">Auth_OpenID_OpenIDStore::useNonce()</a></dt>
-						<dd>This method is called when the library is attempting to use a  nonce. If the nonce is in the store, this method removes it and  returns a value which evaluates as true. Otherwise it returns a  value which evaluates as false.</dd>
+						<dd>Called when using a nonce.</dd>
 					</dl>
 			
 	</div>
@@ -399,12 +298,10 @@
 					<p>Inherited From <span class="classname"><a href="../OpenID/Auth_OpenID_OpenIDStore.html">Auth_OpenID_OpenIDStore</a></span></p>
 					<blockquote>
 													<span class="method-name"><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methodgetAssociation">Auth_OpenID_OpenIDStore::getAssociation()</a></span><br>
-													<span class="method-name"><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methodgetAuthKey">Auth_OpenID_OpenIDStore::getAuthKey()</a></span><br>
-													<span class="method-name"><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methodisDumb">Auth_OpenID_OpenIDStore::isDumb()</a></span><br>
+													<span class="method-name"><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methodgetExpired">Auth_OpenID_OpenIDStore::getExpired()</a></span><br>
 													<span class="method-name"><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methodremoveAssociation">Auth_OpenID_OpenIDStore::removeAssociation()</a></span><br>
 													<span class="method-name"><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methodreset">Auth_OpenID_OpenIDStore::reset()</a></span><br>
 													<span class="method-name"><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methodstoreAssociation">Auth_OpenID_OpenIDStore::storeAssociation()</a></span><br>
-													<span class="method-name"><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methodstoreNonce">Auth_OpenID_OpenIDStore::storeNonce()</a></span><br>
 													<span class="method-name"><a href="../OpenID/Auth_OpenID_OpenIDStore.html#methoduseNonce">Auth_OpenID_OpenIDStore::useNonce()</a></span><br>
 											</blockquote>
 										
@@ -413,7 +310,7 @@
 
 
 	<p class="notes" id="credit">
-		Documentation generated on Fri, 23 Mar 2007 10:36:25 -0700 by <a href="http://www.phpdoc.org" target="_blank">phpDocumentor 1.3.0</a>
+		Documentation generated on Thu, 05 Apr 2007 15:30:05 -0700 by <a href="http://www.phpdoc.org" target="_blank">phpDocumentor 1.3.0</a>
 	</p>
 	</div></body>
 </html>

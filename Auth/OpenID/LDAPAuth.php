@@ -56,7 +56,8 @@ class Auth_OpenID_LDAPAuth extends Auth_OpenID_OpenIDAuth {
 	 * @param $principal_format String format for the credentials this
 	 * principal accepts.
 	 */
-	function Auth_OpenID_LDAPAuth($principal_format, $server_name, $base_dn, $bind_username = null, $bind_password = null, $user_filter = '(uid=%USERNAME%)') {
+	function Auth_OpenID_LDAPAuth($principal_format, $server_name, $base_dn, $bind_username = null, $bind_password = null, $user_filter = '(uid=%USERNAME%)')
+	{
 		$this->principal_format = $principal_format;
     	$this->server = ldap_connect($server_name);
     	$this->base_dn = $base_dn;

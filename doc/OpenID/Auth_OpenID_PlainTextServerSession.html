@@ -22,8 +22,9 @@
 					</div>
 	<div class="info-box-body">
         		<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">A class implementing plaintext server sessions.</p>
 		<p class="notes">
-			Located in <a class="field" href="_Auth---OpenID---Server.php.html">/Auth/OpenID/Server.php</a> (line <span class="field">373</span>)
+			Located in <a class="field" href="_Auth---OpenID---Server.php.html">/Auth/OpenID/Server.php</a> (line <span class="field">420</span>)
 		</p>
 		
 				
@@ -46,7 +47,15 @@
 								</div>
 		<div class="info-box-body">
 			<div class="var-summary">
-																								<div class="var-title">
+																																								<div class="var-title">
+					<span class="var-type">mixed</span>
+					<a href="#$allowed_assoc_types" title="details" class="var-name">$allowed_assoc_types</a>
+				</div>
+																<div class="var-title">
+					<span class="var-type">mixed</span>
+					<a href="#$needs_math" title="details" class="var-name">$needs_math</a>
+				</div>
+																<div class="var-title">
 					<span class="var-type">mixed</span>
 					<a href="#$session_type" title="details" class="var-name">$session_type</a>
 				</div>
@@ -75,7 +84,7 @@
 														
 				<div class="method-definition">
 											<span class="method-result">void</span>
-										<a href="#fromQuery" title="details" class="method-name">fromQuery</a>
+										<a href="#fromMessage" title="details" class="method-name">fromMessage</a>
 											(<span class="var-type"></span>&nbsp;<span class="var-name">$unused_request</span>)
 									</div>
 											</div>
@@ -96,14 +105,50 @@
 					</div>
 		<div class="info-box-body">
 			
-<a name="var$session_type" id="$session_type"><!-- --></A>
+<a name="var$allowed_assoc_types" id="$allowed_assoc_types"><!-- --></A>
+<div class="oddrow">
+
+	<div class="var-header">
+		<span class="var-title">
+			<span class="var-type">mixed</span>
+			<span class="var-name">$allowed_assoc_types</span>
+			 = <span class="var-default">array('HMAC-SHA1', 'HMAC-SHA256')</span>			(line <span class="line-number">427</span>)
+		</span>
+	</div>
+
+	<!-- ========== Info from phpDoc block ========= -->
+	
+	
+		
+		
+
+</div>
+<a name="var$needs_math" id="$needs_math"><!-- --></A>
 <div class="evenrow">
 
 	<div class="var-header">
 		<span class="var-title">
 			<span class="var-type">mixed</span>
+			<span class="var-name">$needs_math</span>
+			 = <span class="var-default"> false</span>			(line <span class="line-number">426</span>)
+		</span>
+	</div>
+
+	<!-- ========== Info from phpDoc block ========= -->
+	
+	
+		
+		
+
+</div>
+<a name="var$session_type" id="$session_type"><!-- --></A>
+<div class="oddrow">
+
+	<div class="var-header">
+		<span class="var-title">
+			<span class="var-type">mixed</span>
 			<span class="var-name">$session_type</span>
-			 = <span class="var-default"> 'plaintext'</span>			(line <span class="line-number">378</span>)
+			 = <span class="var-default"> 'no-encryption'</span>			(line <span class="line-number">425</span>)
 		</span>
 	</div>
 
@@ -131,10 +176,10 @@
 		<div class="info-box-body">
 			<A NAME='method_detail'></A>
 <a name="methodanswer" id="answer"><!-- --></a>
-<div class="oddrow">
+<div class="evenrow">
 	
 	<div class="method-header">
-		<span class="method-title">answer</span> (line <span class="line-number">385</span>)
+		<span class="method-title">answer</span> (line <span class="line-number">434</span>)
 	</div> 
 	
 	<!-- ========== Info from phpDoc block ========= -->
@@ -155,11 +200,11 @@
 		
 			
 	</div>
-<a name="methodfromQuery" id="fromQuery"><!-- --></a>
-<div class="evenrow">
+<a name="methodfromMessage" id="fromMessage"><!-- --></a>
+<div class="oddrow">
 	
 	<div class="method-header">
-		<span class="method-title">fromQuery</span> (line <span class="line-number">380</span>)
+		<span class="method-title">fromMessage</span> (line <span class="line-number">429</span>)
 	</div> 
 	
 	<!-- ========== Info from phpDoc block ========= -->
@@ -167,7 +212,7 @@
 	<div class="method-signature">
 		<span class="method-result">void</span>
 		<span class="method-name">
-			fromQuery
+			fromMessage
 		</span>
 					(<span class="var-type"></span>&nbsp;<span class="var-name">$unused_request</span>)
 			</div>
@@ -186,7 +231,7 @@
 
 
 	<p class="notes" id="credit">
-		Documentation generated on Fri, 23 Mar 2007 10:36:27 -0700 by <a href="http://www.phpdoc.org" target="_blank">phpDocumentor 1.3.0</a>
+		Documentation generated on Thu, 05 Apr 2007 15:30:07 -0700 by <a href="http://www.phpdoc.org" target="_blank">phpDocumentor 1.3.0</a>
 	</p>
 	</div></body>
 </html>

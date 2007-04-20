@@ -16,25 +16,36 @@
 session_start();
 
 require_once 'Auth/OpenID/CryptUtil.php';
-require_once 'Services/Yadis/HTTPFetcher.php';
+require_once 'Auth/Yadis/HTTPFetcher.php';
 require_once 'Auth/OpenID/DiffieHellman.php';
 require_once 'Auth/OpenID/FileStore.php';
 require_once 'Auth/OpenID/KVForm.php';
 require_once 'Auth/OpenID/Consumer.php';
 require_once 'Auth/OpenID/Server.php';
+require_once 'Auth/OpenID/Nonce.php';
+require_once 'Auth/OpenID/SReg.php';
+require_once 'Auth/OpenID/Message.php';
+require_once 'Auth/OpenID/HMACSHA1.php';
 require_once 'Tests/Auth/OpenID/MemStore.php';
 require_once 'PHPUnit.php';
 
-class Auth_OpenID_TestConsumer extends Auth_OpenID_GenericConsumer {
-    /**
-     * Use a small (insecure) modulus for this test so that it runs quickly
-     */
-    function _createDiffieHellman()
+class FastConsumerSession extends Auth_OpenID_DiffieHellmanSHA1ConsumerSession {
+    function FastConsumerSession($dh = null)
     {
-        return new Auth_OpenID_DiffieHellman('1235514290909');
+        if ($dh === null) {
+            $dh = new Auth_OpenID_DiffieHellman(100389557, 2);
+        }
+
+        $this->dh = $dh;
     }
 }
 
+function setConsumerSession(&$con)
+{
+    $con->session_types = array('DH-SHA1' => 'FastConsumerSession');
+}
+
+global $_Auth_OpenID_assocs;
 $_Auth_OpenID_assocs = array(
                             array('another 20-byte key.', 'Snarky'),
                             array(str_repeat("\x00", 20), 'Zeros'),
@@ -56,31 +67,41 @@ function Auth_OpenID_associate($qs, $assoc_secret, $assoc_handle)
 {
     $query_data = Auth_OpenID_parse($qs);
 
-    assert((count($query_data) == 6) || (count($query_data) == 4));
     assert($query_data['openid.mode'] == 'associate');
     assert($query_data['openid.assoc_type'] == 'HMAC-SHA1');
-    assert($query_data['openid.session_type'] == 'DH-SHA1');
 
     $reply_dict = array(
-        'assoc_type' => 'HMAC-SHA1',
-        'assoc_handle' => $assoc_handle,
-        'expires_in' => '600',
-        );
+                        'assoc_type' => 'HMAC-SHA1',
+                        'assoc_handle' => $assoc_handle,
+                        'expires_in' => '600',
+                        );
 
-    $dh_args = Auth_OpenID_DiffieHellman::
-        serverAssociate($query_data, $assoc_secret);
+    if (defined('Auth_OpenID_NO_MATH_SUPPORT')) {
+        assert(count($query_data) == 2);
+        $message = Auth_OpenID_Message::fromPostArgs($query_data);
+        $session = Auth_OpenID_PlainTextServerSession::fromMessage($message);
+    } else {
+        assert((count($query_data) == 6) || (count($query_data) == 4));
+        assert($query_data['openid.mode'] == 'associate');
+        assert($query_data['openid.session_type'] == 'DH-SHA1');
 
-    $reply_dict = array_merge($reply_dict, $dh_args);
+        $message = Auth_OpenID_Message::fromPostArgs($query_data);
 
+        $session = Auth_OpenID_DiffieHellmanSHA1ServerSession::fromMessage($message);
+        $reply_dict['session_type'] = 'DH-SHA1';
+
+    }
+
+    $reply_dict = array_merge($reply_dict, $session->answer($assoc_secret));
     return Auth_OpenID_KVForm::fromArray($reply_dict);
 }
 
-class Auth_OpenID_TestFetcher extends Services_Yadis_HTTPFetcher {
+class Auth_OpenID_TestFetcher extends Auth_Yadis_HTTPFetcher {
     function Auth_OpenID_TestFetcher($user_url, $user_page,
                                      $assoc_secret, $assoc_handle)
     {
         $this->get_responses = array($user_url =>
-                                     new Services_Yadis_HTTPResponse($user_url,
+                                     new Auth_Yadis_HTTPResponse($user_url,
                                                                      200,
                                                                      array(),
                                                                      $user_page));
@@ -92,9 +113,9 @@ class Auth_OpenID_TestFetcher extends Services_Yadis_HTTPFetcher {
     function response($url, $body)
     {
         if ($body === null) {
-            return new Services_Yadis_HTTPResponse($url, 404, array(), 'Not found');
+            return new Auth_Yadis_HTTPResponse($url, 404, array(), 'Not found');
         } else {
-            return new Services_Yadis_HTTPResponse($url, 200, array(), $body);
+            return new Auth_Yadis_HTTPResponse($url, 200, array(), $body);
         }
     }
 
@@ -118,9 +139,9 @@ class Auth_OpenID_TestFetcher extends Services_Yadis_HTTPFetcher {
                           );
 
         if ($query_data == $expected) {
-            return new Services_Yadis_HTTPResponse($url, 200, array(), "is_valid:true\n");
+            return new Auth_Yadis_HTTPResponse($url, 200, array(), "is_valid:true\n");
         } else {
-            return new Services_Yadis_HTTPResponse($url, 400, array(),
+            return new Auth_Yadis_HTTPResponse($url, 400, array(),
                                                 "error:bad check_authentication query\n");
         }
     }
@@ -134,12 +155,13 @@ class Auth_OpenID_TestFetcher extends Services_Yadis_HTTPFetcher {
             return $this->response($url, $response);
         } elseif (strpos($body, 'openid.mode=check_authentication') !== false) {
             return $this->_checkAuth($url, $body);
-        } else {
-            return $this->response($url, null);
         }
+
+        return $this->response($url, null);
     }
 }
 
+global $_Auth_OpenID_user_page_pat;
 $_Auth_OpenID_user_page_pat = "<html>
   <head>
     <title>A user page</title>
@@ -150,7 +172,10 @@ $_Auth_OpenID_user_page_pat = "<html>
   </body>
 </html>";
 
+global $_Auth_OpenID_server_url;
 $_Auth_OpenID_server_url = "http://server.example.com/";
+
+global $_Auth_OpenID_consumer_url;
 $_Auth_OpenID_consumer_url = "http://consumer.example.com/";
 
 class Tests_Auth_OpenID_Consumer extends PHPUnit_TestCase {
@@ -161,10 +186,15 @@ class Tests_Auth_OpenID_Consumer extends PHPUnit_TestCase {
         global $_Auth_OpenID_consumer_url,
             $_Auth_OpenID_server_url;
 
+        if (!defined('Auth_OpenID_NO_MATH_SUPPORT')) {
+            setConsumerSession($consumer);
+        }
+
         $endpoint = new Auth_OpenID_ServiceEndpoint();
-        $endpoint->identity_url = $user_url;
+        $endpoint->claimed_id = $user_url;
         $endpoint->server_url = $_Auth_OpenID_server_url;
-        $endpoint->delegate = $delegate_url;
+        $endpoint->local_id = $delegate_url;
+        $endpoint->type_uris = array(Auth_OpenID_TYPE_1_1);
 
         $result = $consumer->begin($endpoint);
 
@@ -194,29 +224,32 @@ class Tests_Auth_OpenID_Consumer extends PHPUnit_TestCase {
         $this->assertEquals(0, strpos($new_return_to, $return_to));
 
         $query = array(
-                       'nonce' => $result->return_to_args['nonce'],
+                       $consumer->openid1_nonce_query_arg_name =>
+                         $result->return_to_args[$consumer->openid1_nonce_query_arg_name],
                        'openid.mode'=> 'id_res',
                        'openid.return_to'=> $new_return_to,
                        'openid.identity'=> $delegate_url,
                        'openid.assoc_handle'=> $fetcher->assoc_handle,
                        );
 
-        if ($consumer->_use_assocs) {
-            $assoc = $store->getAssociation($_Auth_OpenID_server_url,
-                                            $fetcher->assoc_handle);
-
-            $assoc->addSignature(array('mode', 'return_to', 'identity'),
-                                 $query);
-        } else {
+        if (!$consumer->_use_assocs) {
             $query['openid.signed'] =
-                'assoc_handle,sig,signed';
+                'assoc_handle,mode,signed,identity';
             $query['openid.assoc_handle'] = $fetcher->assoc_handle;
             $query['openid.sig'] = 'fake';
         }
 
-        $result = $consumer->complete($query, $result->endpoint);
+        $message = Auth_OpenID_Message::fromPostArgs($query);
 
-        $this->assertEquals($result->status, 'success');
+        if ($consumer->_use_assocs) {
+            $assoc = $store->getAssociation($_Auth_OpenID_server_url,
+                                            $fetcher->assoc_handle);
+            $message = $assoc->signMessage($message);
+        }
+
+        $result = $consumer->complete($message, $result->endpoint);
+
+        $this->assertEquals(Auth_OpenID_SUCCESS, $result->status);
         $this->assertEquals($result->identity_url, $user_url);
     }
 
@@ -237,10 +270,10 @@ class Tests_Auth_OpenID_Consumer extends PHPUnit_TestCase {
 
         $user_page = sprintf($_Auth_OpenID_user_page_pat, $links);
         $fetcher = new Auth_OpenID_TestFetcher($user_url, $user_page,
-                                              $_Auth_OpenID_assocs[0][0],
-                                              $_Auth_OpenID_assocs[0][1]);
+                                               $_Auth_OpenID_assocs[0][0],
+                                               $_Auth_OpenID_assocs[0][1]);
 
-        $consumer = new Auth_OpenID_TestConsumer($store);
+        $consumer = new Auth_OpenID_GenericConsumer($store);
         $consumer->fetcher =& $fetcher;
 
         $expected_num_assocs = 0;
@@ -308,29 +341,103 @@ class _TestIdRes extends PHPUnit_TestCase {
         $this->store = new Tests_Auth_OpenID_MemStore();
         $cl = $this->consumer_class;
         $this->consumer = new $cl($this->store);
-        $this->return_to = "nonny";
+        $this->return_to = "http://some.host/path";
         $this->endpoint = new Auth_OpenID_ServiceEndpoint();
 
         $this->server_id = "sirod";
         $this->server_url = "serlie";
         $this->consumer_id = "consu";
 
-        $this->endpoint->identity_url = $this->consumer_id;
+        $this->endpoint->claimed_id = $this->consumer_id;
         $this->endpoint->server_url = $this->server_url;
-        $this->endpoint->delegate = $this->server_id;
+        $this->endpoint->local_id = $this->server_id;
+        $this->endpoint->type_uris = array(Auth_OpenID_TYPE_1_1);
     }
 }
 
 class Tests_Auth_OpenID_Consumer_TestSetupNeeded extends _TestIdRes {
-    function test_setupNeeded()
+    function failUnlessSetupNeeded($expected_setup_url, $message)
     {
-        $setup_url = "http://unittest/setup-here";
-        $query = array(
-                       'openid.mode' => 'id_res',
-                       'openid.user_setup_url' => $setup_url);
-        $ret = $this->consumer->_doIdRes($query, $this->endpoint);
-        $this->assertEquals($ret->status, Auth_OpenID_SETUP_NEEDED);
-        $this->assertEquals($ret->setup_url, $setup_url);
+        if ($this->consumer._checkSetupNeeded($message)) {
+            $this->assertEquals($expected_setup_url,
+                                $message->getArg(Auth_OpenID_OPENID_NS,
+                                                 'user_setup_url'));
+        } else {
+            $this->fail("Expected to find an immediate-mode response");
+        }
+    }
+
+    function test_setupNeededOpenID1()
+    {
+        // The minimum conditions necessary to trigger Setup Needed
+        $setup_url = 'http://unittest/setup-here';
+        $message = Auth_OpenID_Message::fromPostArgs(array(
+            'opaenid.mode' => 'id_res',
+            'openid.user_setup_url' => $setup_url
+            ));
+        $this->assertTrue($message->isOpenID1());
+        $this->failUnlessSetupNeeded($setup_url, $message);
+    }
+
+    function test_setupNeededOpenID1_extra()
+    {
+        // Extra stuff along with setup_url still trigger Setup Needed
+        $setup_url = 'http://unittest/setup-here';
+        $message = Auth_OpenID_Message::fromPostArgs(array(
+            'openid.mode' => 'id_res',
+            'openid.user_setup_url' => $setup_url,
+            'openid.identity' => 'bogus'
+            ));
+        $this->assertTrue($message->isOpenID1());
+        $this->failUnlessSetupNeeded($setup_url, $message);
+    }
+
+    function test_noSetupNeededOpenID1()
+    {
+        // When the user_setup_url is missing on an OpenID 1 message,
+        // we assume that it's not a cancel response to
+        // checkid_immediate
+        $message = Auth_OpenID_Message::fromOpenIDArgs(array('mode' => 'id_res'));
+        $this->assertTrue($message->isOpenID1());
+
+        // No SetupNeededError raised
+        $this->consumer->_checkSetupNeeded($message);
+    }
+
+    function test_setupNeededOpenID2()
+    {
+        $message = Auth_OpenID_Message::fromOpenIDArgs(array(
+            'mode' => 'setup_needed',
+            'ns' => Auth_OpenID_OPENID2_NS
+            ));
+        $this->assertTrue($message->isOpenID2());
+        $response = $this->consumer->complete($message, null, null);
+        $this->assertEquals('setup_needed', $response->status);
+        $this->assertEquals(null, $response->setup_url);
+    }
+
+    function test_setupNeededDoesntWorkForOpenID1()
+    {
+        $message = Auth_OpenID_Message::fromOpenIDArgs(array(
+                     'mode' => 'setup_needed'));
+
+        $this->assertFalse($this->consumer._checkSetupNeeded($message));
+
+        $response = $this->consumer->complete($message, null, null);
+        $this->assertEquals('failure', $response->status);
+        $this->assertTrue(strpos($response->message, 'Invalid openid.mode') === 0);
+    }
+
+    function test_noSetupNeededOpenID2()
+    {
+        $message = Auth_OpenID_Message::fromOpenIDArgs(array(
+            'mode' => 'id_res',
+            'game' => 'puerto_rico',
+            'ns' => Auth_OpenID_OPENID2_NS
+            ));
+        $this->assertTrue($message->isOpenID2());
+
+        $this->assertFalse($this->consumer._checkSetupNeeded($message));
     }
 }
 
@@ -339,9 +446,162 @@ define('E_MOCK_FETCHER_EXCEPTION', 'mock fetcher exception');
 define('E_ASSERTION_ERROR', 'assertion error');
 
 class _CheckAuthDetectingConsumer extends Auth_OpenID_GenericConsumer {
+    function _verifyDiscoveryResults($message, $endpoint)
+    {
+        return $endpoint;
+    }
+
+    function _idResCheckNonce($message, $endpoint)
+    {
+        return true;
+    }
+
     function _checkAuth($query, $server_url)
     {
         __raiseError(E_CHECK_AUTH_HAPPENED);
+    }
+}
+
+global $GOODSIG;
+$GOODSIG = "[A Good Signature]";
+
+class GoodAssociation {
+    var $expiresIn = 3600;
+    var $handle = "-blah-";
+
+    function getExpiresIn()
+    {
+        return $this->expiresIn;
+    }
+
+    function checkMessageSignature($message)
+    {
+        global $GOODSIG;
+        return $message->getArg(Auth_OpenID_OPENID_NS, 'sig') == $GOODSIG;
+    }
+}
+
+class GoodAssocStore extends Tests_Auth_OpenID_MemStore {
+    function getAssociation($server_url, $handle = null)
+    {
+        return new GoodAssociation();
+    }
+}
+
+class TestIdResCheckSignature extends _TestIdRes {
+    function setUp()
+    {
+        global $GOODSIG;
+
+        parent::setUp();
+        $this->assoc = new GoodAssociation();
+        $this->assoc->handle = "{not_dumb}";
+        $this->store->storeAssociation($this->endpoint->server_url, $this->assoc);
+
+        $this->message = Auth_OpenID_Message::fromPostArgs(array(
+            'openid.mode'=> 'id_res',
+            'openid.identity'=> '=example',
+            'openid.sig'=> $GOODSIG,
+            'openid.assoc_handle'=> $this->assoc->handle,
+            'openid.signed'=> 'mode,identity,assoc_handle,signed',
+            'frobboz'=> 'banzit'));
+    }
+
+    function test_sign()
+    {
+        // assoc_handle to assoc with good sig
+        $this->consumer->_idResCheckSignature($this->message,
+                                              $this->endpoint->server_url);
+    }
+
+    function test_signFailsWithBadSig()
+    {
+        $this->message.setArg(Auth_OpenID_OPENID_NS, 'sig', 'BAD SIGNATURE');
+        $result = $this->consumer->_idResCheckSignature($this->message, $this->endpoint->server_url);
+        $this->assertTrue(Auth_OpenID::isFailure($result));
+    }
+}
+
+class StatelessConsumer1 extends Auth_OpenID_GenericConsumer {
+    function _processCheckAuthResponse($response, $server_url)
+    {
+        return true;
+    }
+
+    function _makeKVPost($args, $server_url)
+    {
+        return array();
+    }
+}
+
+class Tests_Auth_OpenID_Stateless1 extends _TestIdRes {
+    var $consumer_class = "StatelessConsumer1";
+
+    function setUp()
+    {
+        global $GOODSIG;
+
+        parent::setUp();
+        $this->assoc = new GoodAssociation();
+        $this->assoc->handle = "{not_dumb}";
+        $this->store->storeAssociation($this->endpoint->server_url, $this->assoc);
+
+        $this->message = Auth_OpenID_Message::fromPostArgs(array(
+            'openid.mode'=> 'id_res',
+            'openid.identity'=> '=example',
+            'openid.sig'=> $GOODSIG,
+            'openid.assoc_handle'=> $this->assoc->handle,
+            'openid.signed'=> 'mode,identity,assoc_handle,signed',
+            'frobboz'=> 'banzit'));
+    }
+
+    function test_stateless()
+    {
+        // assoc_handle missing assoc, consumer._checkAuth returns
+        // goodthings
+        $this->message->setArg(Auth_OpenID_OPENID_NS, "assoc_handle", "dumbHandle");
+        $this->consumer->_idResCheckSignature($this->message,
+                                              $this->endpoint->server_url);
+    }
+}
+
+class StatelessConsumer2 extends Auth_OpenID_GenericConsumer {
+    function _checkAuth($_, $__)
+    {
+        return false;
+    }
+}
+
+class Tests_Auth_OpenID_Stateless2 extends _TestIdRes {
+    var $consumer_class = "StatelessConsumer2";
+
+    function setUp()
+    {
+        global $GOODSIG;
+
+        parent::setUp();
+        $this->assoc = new GoodAssociation();
+        $this->assoc->handle = "{not_dumb}";
+        $this->store->storeAssociation($this->endpoint->server_url, $this->assoc);
+
+        $this->message = Auth_OpenID_Message::fromPostArgs(array(
+            'openid.mode'=> 'id_res',
+            'openid.identity'=> '=example',
+            'openid.sig'=> $GOODSIG,
+            'openid.assoc_handle'=> $this->assoc->handle,
+            'openid.signed'=> 'mode,identity,assoc_handle,signed',
+            'frobboz'=> 'banzit'));
+    }
+
+    function test_statelessRaisesError()
+    {
+        // assoc_handle missing assoc, consumer._checkAuth returns
+        // goodthings
+        $this->message->setArg(Auth_OpenID_OPENID_NS, "assoc_handle",
+                               "dumbHandle");
+        $result = $this->consumer->_idResCheckSignature($this->message,
+                                                        $this->endpoint->server_url);
+        $this->assertTrue(Auth_OpenID::isFailure($result));
     }
 }
 
@@ -349,76 +609,126 @@ class Tests_Auth_OpenID_Consumer_CheckNonceTest extends _TestIdRes {
     function setUp()
     {
         parent::setUp();
-        $this->nonce = "t3stn0nc3";
-        $this->store->storeNonce($this->nonce);
+        $this->consumer->openid1_nonce_query_arg_name = 'nonce';
     }
 
-    function test_goodNonce()
+    function test_openid1Success()
     {
+        // use consumer-generated nonce
         $this->return_to = sprintf('http://rt.unittest/?nonce=%s',
-                                   $this->nonce);
-        $this->response = new Auth_OpenID_SuccessResponse($this->endpoint,
-                                   array('openid.return_to' => $this->return_to));
+                                   Auth_OpenID_mkNonce());
+        $this->response = Auth_OpenID_Message::fromOpenIDArgs(
+                            array('return_to' => $this->return_to));
 
-        $ret = $this->consumer->_checkNonce($this->response, $this->nonce);
-        $this->assertEquals($ret->status, Auth_OpenID_SUCCESS);
-        $this->assertEquals($ret->identity_url, $this->consumer_id);
+        $result = $this->consumer->_idResCheckNonce($this->response, $this->endpoint);
+        $this->assertFalse(Auth_OpenID::isFailure($result));
+    }
+
+    function test_openid1Missing()
+    {
+        // use consumer-generated nonce
+        $this->response = Auth_OpenID_Message::fromOpenIDArgs(array());
+        $n = $this->consumer->_idResGetNonceOpenID1($this->response, $this->endpoint);
+        $this->assertTrue($n === null);
+    }
+
+    function test_consumerNonceOpenID2()
+    {
+        // OpenID 2 does not use consumer-generated nonce
+        $this->return_to = sprintf('http://rt.unittest/?nonce=%s',
+                                   Auth_OpenID_mkNonce());
+        $this->response = Auth_OpenID_Message::fromOpenIDArgs(
+                            array('return_to' => $this->return_to,
+                                  'ns' => Auth_OpenID_OPENID2_NS));
+        $result = $this->consumer->_idResCheckNonce($this->response, $this->endpoint);
+        $this->assertTrue(Auth_OpenID::isFailure($result));
+    }
+
+    function test_serverNonce()
+    {
+        // use server-generated nonce
+        $this->response = Auth_OpenID_Message::fromOpenIDArgs(
+                            array('ns' => Auth_OpenID_OPENID2_NS,
+                                  'response_nonce' => Auth_OpenID_mkNonce()));
+        $this->consumer->_idResCheckNonce($this->response, $this->endpoint);
+    }
+
+    function test_serverNonceOpenID1()
+    {
+        // OpenID 1 does not use server-generated nonce
+        $this->response = Auth_OpenID_Message::fromOpenIDArgs(
+        array('ns' => Auth_OpenID_OPENID1_NS,
+             'return_to'=> 'http://return.to/',
+              'response_nonce'=> Auth_OpenID_mkNonce()));
+        $result = $this->consumer->_idResCheckNonce($this->response, $this->endpoint);
+        $this->assertTrue(Auth_OpenID::isFailure($result));
     }
 
     function test_badNonce()
     {
         // remove the nonce from the store
-        $this->store->useNonce($this->nonce);
-        $this->return_to = sprintf('http://rt.unittest/?nonce=%s',
-                                   $this->nonce);
-        $this->response = new Auth_OpenID_SuccessResponse($this->endpoint,
-                                 array('openid.return_to' => $this->return_to));
-        $ret = $this->consumer->_checkNonce($this->response, $this->nonce);
-        $this->assertEquals($ret->status, Auth_OpenID_FAILURE);
-        $this->assertEquals($ret->identity_url, $this->consumer_id);
-        $this->assertTrue(strpos($ret->message, 'Nonce missing from store') === 0);
+        $nonce = Auth_OpenID_mkNonce();
+        list($timestamp, $salt) = Auth_OpenID_splitNonce($nonce);
+
+        $this->store->useNonce($this->server_url, $timestamp, $salt);
+
+        $response = Auth_OpenID_Message::fromOpenIDArgs(array(
+                                                              'response_nonce' => $nonce,
+                                                              'ns' => Auth_OpenID_OPENID2_NS
+                                                              ));
+
+        $result = $this->consumer->_idResCheckNonce($response,
+                                                    $this->endpoint);
+
+        $this->assertTrue(Auth_OpenID::isFailure($result));
     }
 
     function test_tamperedNonce()
     {
-        $this->return_to = sprintf('http://rt.unittest/?nonce=HACKED-%s',
-                                   $this->nonce);
-        $this->response = new Auth_OpenID_SuccessResponse($this->endpoint,
-                                  array('openid.return_to' => $this->return_to));
-        $ret = $this->consumer->_checkNonce($this->response, $this->nonce);
-        $this->assertEquals($ret->status, Auth_OpenID_FAILURE);
-        $this->assertEquals($ret->identity_url, $this->consumer_id);
-        $this->assertTrue(strpos($ret->message, 'Nonce mismatch') === 0);
+        // Malformed nonce
+        $query = array('response_nonce' => 'malformed',
+                       'ns' => Auth_OpenID_OPENID2_NS);
+        $message = Auth_OpenID_Message::fromPostArgs($query);
+
+        $result = $this->consumer->_idResCheckNonce($message,
+                                                    $this->endpoint);
+
+        $this->assertTrue(Auth_OpenID::isFailure($result));
     }
 
     function test_missingNonce()
     {
         // no nonce parameter on the return_to
-        $this->response = new Auth_OpenID_SuccessResponse($this->endpoint,
-                                     array('openid.return_to' => $this->return_to));
-        $ret = $this->consumer->_checkNonce($this->response, $this->nonce);
-        $this->assertEquals($ret->status, Auth_OpenID_FAILURE);
-        $this->assertEquals($ret->identity_url, $this->consumer_id);
-        $this->assertTrue(strpos($ret->message,
-                                 'Nonce missing from return_to') === 0);
+        $query = array('openid.return_to' => $this->return_to);
+        $message = Auth_OpenID_Message::fromPostArgs($query);
+
+        $result = $this->consumer->_idResCheckNonce($message,
+                                                    $this->endpoint);
+
+        $this->assertTrue(Auth_OpenID::isFailure($result));
     }
 }
 
 class Tests_Auth_OpenID_Consumer_TestCheckAuthTriggered extends _TestIdRes {
     var $consumer_class = '_CheckAuthDetectingConsumer';
 
-    function _doIdRes($query)
+    function _doIdRes($message, $endpoint)
     {
-        return $this->consumer->_doIdRes($query, $this->endpoint);
+        return $this->consumer->_doIdRes($message, $endpoint);
     }
 
     function test_checkAuthTriggered()
     {
         $query = array('openid.return_to' => $this->return_to,
                        'openid.identity' => $this->server_id,
-                       'openid.assoc_handle' =>'not_found');
+                       'openid.assoc_handle' =>'not_found',
+                       'openid.sig' => 'bogus',
+                       'openid.signed' => 'identity,return_to');
 
-        $result = $this->_doIdRes($query);
+        $message = Auth_OpenID_Message::fromPostArgs($query);
+
+        $result = $this->_doIdRes($message, $this->endpoint);
+
         $error = __getError();
 
         if ($error === null) {
@@ -439,9 +749,13 @@ class Tests_Auth_OpenID_Consumer_TestCheckAuthTriggered extends _TestIdRes {
         $query = array(
             'openid.return_to' => $this->return_to,
             'openid.identity' => $this->server_id,
-            'openid.assoc_handle' =>'not_found');
+            'openid.assoc_handle' => 'not_found',
+            'openid.sig' => 'bogus',
+            'openid.signed' => 'return_to,identity');
 
-        $result = $this->_doIdRes($query);
+        $message = Auth_OpenID_Message::fromPostArgs($query);
+
+        $result = $this->_doIdRes($message, $this->endpoint);
         $error = __getError();
 
         if ($error === null) {
@@ -464,11 +778,15 @@ class Tests_Auth_OpenID_Consumer_TestCheckAuthTriggered extends _TestIdRes {
         $query = array(
             'openid.return_to' => $this->return_to,
             'openid.identity' => $this->server_id,
+            'openid.sig' => 'bogus',
+            'openid.signed' => 'identity,return_to',
             'openid.assoc_handle' => $handle);
 
-        $info = $this->_doIdRes($query);
+        $message = Auth_OpenID_Message::fromPostArgs($query);
+
+        $info = $this->_doIdRes($message, $this->endpoint);
+
         $this->assertEquals('failure', $info->status);
-        $this->assertEquals($this->consumer_id, $info->identity_url);
 
         $this->assertTrue(strpos($info->message, 'expired') !== false);
     }
@@ -496,8 +814,11 @@ class Tests_Auth_OpenID_Consumer_TestCheckAuthTriggered extends _TestIdRes {
             'openid.identity' => $this->server_id,
             'openid.assoc_handle' => $good_handle);
 
-        $good_assoc->addSignature(array('return_to', 'identity'), $query);
-        $info = $this->_doIdRes($query);
+        $message = Auth_OpenID_Message::fromPostArgs($query);
+        $message = $good_assoc->signMessage($message);
+
+        $info = $this->_doIdRes($message, $this->endpoint);
+
         $this->assertEquals($info->status, 'success');
         $this->assertEquals($this->consumer_id, $info->identity_url);
     }
@@ -528,9 +849,44 @@ class Tests_Auth_OpenID_Complete extends _TestIdRes {
     function test_cancel()
     {
         $query = array('openid.mode' => 'cancel');
-        $r = $this->consumer->complete($query, $this->endpoint);
+        $message = Auth_OpenID_Message::fromPostArgs($query);
+
+        $r = $this->consumer->complete($message, $this->endpoint);
         $this->assertEquals($r->status, Auth_OpenID_CANCEL);
-        $this->assertTrue($r->identity_url == $this->endpoint->identity_url);
+        $this->assertTrue($r->identity_url == $this->endpoint->claimed_id);
+    }
+
+    function test_errorWithNoOptionalKeys()
+    {
+        $msg = 'an error message';
+        $contact = 'some contact info here';
+        $message = Auth_OpenID_Message::fromPostArgs(array('openid.mode'=> 'error',
+                 'openid.error'=> $msg,
+                                                           'openid.contact'=> $contact));
+
+        $r = $this->consumer->complete($message, $this->endpoint);
+        $this->assertEquals($r->status, Auth_OpenID_FAILURE);
+        $this->assertTrue($r->identity_url == $this->endpoint->claimed_id);
+        $this->assertTrue($r->contact == $contact);
+        $this->assertTrue($r->reference === null);
+        $this->assertEquals($r->message, $msg);
+    }
+
+    function test_errorWithOptionalKeys()
+    {
+        $msg = 'an error message';
+        $contact = 'me';
+        $reference = 'support ticket';
+        $message = Auth_OpenID_Message::fromPostArgs(array('openid.mode'=> 'error',
+                 'openid.error'=> $msg, 'openid.reference'=> $reference,
+                 'openid.contact'=> $contact, 'openid.ns'=> Auth_OpenID_OPENID2_NS
+                                                           ));
+        $r = $this->consumer->complete($message, $this->endpoint);
+        $this->assertEquals($r->status, Auth_OpenID_FAILURE);
+        $this->assertTrue($r->identity_url == $this->endpoint->claimed_id);
+        $this->assertTrue($r->contact == $contact);
+        $this->assertTrue($r->reference == $reference);
+        $this->assertEquals($r->message, $msg);
     }
 
     function test_error()
@@ -538,24 +894,27 @@ class Tests_Auth_OpenID_Complete extends _TestIdRes {
         $msg = 'an error message';
         $query = array('openid.mode' =>'error',
                        'openid.error' => $msg);
-        $r = $this->consumer->complete($query, $this->endpoint);
+        $message = Auth_OpenID_Message::fromPostArgs($query);
+        $r = $this->consumer->complete($message, $this->endpoint);
         $this->assertEquals($r->status, Auth_OpenID_FAILURE);
-        $this->assertTrue($r->identity_url == $this->endpoint->identity_url);
+        $this->assertTrue($r->identity_url == $this->endpoint->claimed_id);
         $this->assertEquals($r->message, $msg);
     }
 
     function test_noMode()
     {
         $query = array();
-        $r = $this->consumer->complete($query, $this->endpoint);
+        $message = Auth_OpenID_Message::fromPostArgs($query);
+        $r = $this->consumer->complete($message, $this->endpoint);
         $this->assertEquals($r->status, Auth_OpenID_FAILURE);
-        $this->assertTrue($r->identity_url == $this->endpoint->identity_url);
+        $this->assertTrue($r->identity_url == $this->endpoint->claimed_id);
     }
 
     function test_idResMissingField()
     {
         $query = array('openid.mode' => 'id_res');
-        $r = $this->consumer->complete($query, $this->endpoint);
+        $message = Auth_OpenID_Message::fromPostArgs($query);
+        $r = $this->consumer->complete($message, $this->endpoint);
         $this->assertEquals($r->status, Auth_OpenID_FAILURE);
         $this->assertEquals($r->identity_url, $this->consumer_id);
     }
@@ -565,11 +924,247 @@ class Tests_Auth_OpenID_Complete extends _TestIdRes {
         $query = array('openid.mode' => 'id_res',
                        'openid.return_to' => 'return_to (just anything)',
                        'openid.identity' => 'something wrong (not this->consumer_id)',
-                       'openid.assoc_handle' => 'does not matter');
-        $r = $this->consumer->complete($query, $this->endpoint);
+                       'openid.assoc_handle' => 'does not matter',
+                       'openid.signed' => 'identity,return_to',
+                       'openid.sig' => 'bogus');
+
+        $message = Auth_OpenID_Message::fromPostArgs($query);
+        $r = $this->consumer->complete($message, $this->endpoint);
         $this->assertEquals($r->status, Auth_OpenID_FAILURE);
         $this->assertEquals($r->identity_url, $this->consumer_id);
-        $this->assertTrue(strpos($r->message, 'delegate') !== false);
+        $this->assertTrue(strpos($r->message, 'local_id') !== false);
+    }
+}
+
+class SetupNeededConsumer extends Auth_OpenID_GenericConsumer {
+    function _checkSetupNeeded($message)
+    {
+        return true;
+    }
+}
+
+class Tests_Auth_OpenID_SetupNeeded extends _TestIdRes {
+    function test_setupNeededIdRes()
+    {
+        $message = Auth_OpenID_Message::fromOpenIDArgs(array('mode'=> 'id_res'));
+        $response = $this->consumer->complete($message, null);
+        $this->assertEquals(Auth_OpenID_SETUP_NEEDED,
+                            $response->status);
+    }
+}
+
+class TempConsumer extends Auth_OpenID_GenericConsumer {
+    function _verifyDiscoveryResults($message, $endpoint)
+    {
+        return $endpoint;
+    }
+}
+
+class TestCompleteMissingSig extends PHPUnit_TestCase {
+
+    function setUp()
+    {
+        global $GOODSIG;
+
+        $this->store = new GoodAssocStore();
+        $this->consumer = new Auth_OpenID_GenericConsumer($this->store);
+        $this->server_url = "http://idp.unittest/";
+
+        $claimed_id = 'bogus.claimed';
+
+        $this->message = Auth_OpenID_Message::fromOpenIDArgs(
+        array('mode'=> 'id_res',
+              'return_to'=> 'return_to (just anything)',
+              'identity'=> $claimed_id,
+              'assoc_handle'=> 'does not matter',
+              'sig'=> $GOODSIG,
+              'response_nonce'=> Auth_OpenID_mkNonce(),
+              'signed'=> 'identity,return_to,response_nonce,assoc_handle,claimed_id',
+              'claimed_id'=> $claimed_id,
+              'op_endpoint'=> $this->server_url,
+              'ns' => Auth_OpenID_OPENID2_NS));
+
+        $this->endpoint = new Auth_OpenID_ServiceEndpoint();
+        $this->endpoint->server_url = $this->server_url;
+        $this->endpoint->claimed_id = $claimed_id;
+    }
+
+    function test_idResMissingNoSigs()
+    {
+        $c = new TempConsumer($this->store);
+        $r = $c->complete($this->message, $this->endpoint);
+        $this->failUnlessSuccess($r);
+    }
+
+    function test_idResNoIdentity()
+    {
+        $this->message->delArg(Auth_OpenID_OPENID_NS, 'identity');
+        $this->message->delArg(Auth_OpenID_OPENID_NS, 'claimed_id');
+        $this->endpoint->claimed_id = null;
+        $this->message->setArg(Auth_OpenID_OPENID_NS,
+                               'signed', 'return_to,response_nonce,assoc_handle');
+        $r = $this->consumer->complete($this->message, $this->endpoint);
+        $this->failUnlessSuccess($r);
+    }
+
+    function test_idResMissingIdentitySig()
+    {
+        $this->message->setArg(Auth_OpenID_OPENID_NS,
+                               'signed',
+                               'return_to,response_nonce,assoc_handle,claimed_id');
+        $r = $this->consumer->complete($this->message, $this->endpoint);
+        $this->assertEquals($r->status, Auth_OpenID_FAILURE);
+    }
+
+    function test_idResMissingReturnToSig()
+    {
+        $this->message->setArg(Auth_OpenID_OPENID_NS,
+                               'signed',
+                               'identity,response_nonce,assoc_handle,claimed_id');
+        $r = $this->consumer->complete($this->message, $this->endpoint);
+        $this->assertEquals($r->status, Auth_OpenID_FAILURE);
+    }
+
+    function test_idResMissingAssocHandleSig()
+    {
+        $this->message->setArg(Auth_OpenID_OPENID_NS, 'signed',
+                               'identity,response_nonce,return_to,claimed_id');
+        $r = $this->consumer->complete($this->message, $this->endpoint);
+        $this->assertEquals($r->status, Auth_OpenID_FAILURE);
+    }
+
+    function test_idResMissingClaimedIDSig()
+    {
+        $this->message->setArg(Auth_OpenID_OPENID_NS, 'signed',
+                               'identity,response_nonce,return_to,assoc_handle');
+        $r = $this->consumer->complete($this->message, $this->endpoint);
+        $this->assertEquals($r->status, Auth_OpenID_FAILURE);
+    }
+
+    function failUnlessSuccess($response)
+    {
+        if ($response->status != Auth_OpenID_SUCCESS) {
+            $this->fail(sprintf("Non-successful response: %s", $response));
+        }
+    }
+}
+
+class TestReturnToArgs extends PHPUnit_TestCase {
+    function setUp()
+    {
+        $store = null;
+        $this->consumer = new Auth_OpenID_GenericConsumer($store);
+    }
+
+    function test_returnToArgsOkay()
+    {
+        $query = array(
+            'openid.mode'=> 'id_res',
+            'openid.return_to'=> 'http://example.com/?foo=bar',
+            'foo'=> 'bar'
+            );
+        // no return value, success is assumed if there are no exceptions.
+        $result = $this->consumer->_verifyReturnToArgs($query);
+
+        $this->assertFalse(Auth_OpenID::isFailure($result));
+        $this->assertTrue($result);
+    }
+
+    function test_returnToMismatch()
+    {
+        $query = array(
+            'openid.mode' => 'id_res',
+            'openid.return_to' => 'http://example.com/?foo=bar');
+
+        // fail, query has no key 'foo'.
+        $result = $this->consumer->_verifyReturnToArgs($query);
+        $this->assertTrue(Auth_OpenID::isFailure($result));
+
+        $query['foo'] = 'baz';
+        // fail, values for 'foo' do not match.
+        $result = $this->consumer->_verifyReturnToArgs($query);
+        $this->assertTrue(Auth_OpenID::isFailure($result));
+    }
+
+    function test_noReturnTo()
+    {
+        $query = array('openid.mode'=> 'id_res');
+        $result = $this->consumer->_verifyReturnToArgs($query);
+        $this->assertTrue(Auth_OpenID::isFailure($result));
+    }
+
+    function test_completeBadReturnTo()
+    {
+        // Test GenericConsumer.complete()'s handling of bad return_to
+        // values.
+        $return_to = "http://some.url/path?foo=bar";
+
+        // Scheme, authority, and path differences are checked by
+        // GenericConsumer._checkReturnTo.  Query args checked by
+        // GenericConsumer._verifyReturnToArgs.
+        $bad_return_tos = array(
+                                // Scheme only
+                                "https://some.url/path?foo=bar",
+                                // Authority only
+                                "http://some.url.invalid/path?foo=bar",
+                                // Path only
+                                "http://some.url/path_extra?foo=bar",
+                                // Query args differ
+                                "http://some.url/path?foo=bar2",
+                                "http://some.url/path?foo2=bar"
+                                );
+
+        $m = new Auth_OpenID_Message(Auth_OpenID_OPENID1_NS);
+        $m->setArg(Auth_OpenID_OPENID_NS, 'mode', 'cancel');
+        $m->setArg(Auth_OpenID_BARE_NS, 'foo', 'bar');
+        $endpoint = null;
+
+        foreach ($bad_return_tos as $bad) {
+            $m->setArg(Auth_OpenID_OPENID_NS, 'return_to', $bad);
+            $result = $this->consumer->complete($m, $endpoint, $return_to);
+            $this->assertTrue(Auth_OpenID::isFailure($result));
+            $this->assertTrue($result->message ==
+                              "openid.return_to does not match return URL");
+        }
+    }
+
+    function test_completeGoodReturnTo()
+    {
+        // Test GenericConsumer.complete()'s handling of good
+        // return_to values.
+        $return_to = "http://some.url/path";
+
+        $good_return_tos = array(
+                                 array($return_to,
+                                       array()),
+                                 array($return_to . "?another=arg",
+                                       array(array(
+                                                   array(Auth_OpenID_BARE_NS, 'another'),
+                                                   'arg'))),
+                                 array($return_to . "?another=arg#fragment",
+                                       array(array(
+                                                   array(Auth_OpenID_BARE_NS, 'another'),
+                                                   'arg')))
+                                 );
+
+        $endpoint = null;
+
+        foreach ($good_return_tos as $pair) {
+            list($good_return_to, $extra) = $pair;
+            $m = new Auth_OpenID_Message(Auth_OpenID_OPENID1_NS);
+            $m->setArg(Auth_OpenID_OPENID_NS, 'mode', 'cancel');
+
+            for ($i = 0; $i < count($extra); $i++) {
+                list($ckey, $value) = $extra[$i];
+                $ns = $ckey[0];
+                $key = $ckey[1];
+                $m->setArg($ns, $key, $value);
+            }
+
+            $m->setArg(Auth_OpenID_OPENID_NS, 'return_to', $good_return_to);
+            $result = $this->consumer->complete($m, $endpoint, $return_to);
+            $this->assertTrue(is_a($result, 'Auth_OpenID_CancelResponse'));
+        }
     }
 }
 
@@ -590,7 +1185,8 @@ class Tests_Auth_OpenID_CheckAuthResponse extends _TestIdRes {
     {
         // successful response to check_authentication
         $response = array('is_valid' => 'true');
-        $r = $this->consumer->_processCheckAuthResponse($response, $this->server_url);
+        $message = Auth_OpenID_Message::fromOpenIDArgs($response);
+        $r = $this->consumer->_processCheckAuthResponse($message, $this->server_url);
         $this->assertTrue($r);
     }
 
@@ -599,7 +1195,8 @@ class Tests_Auth_OpenID_CheckAuthResponse extends _TestIdRes {
         // check_authentication returns false when the server sends no
         // answer
         $response = array();
-        $r = $this->consumer->_processCheckAuthResponse($response, $this->server_url);
+        $message = Auth_OpenID_Message::fromPostArgs($response);
+        $r = $this->consumer->_processCheckAuthResponse($message, $this->server_url);
         $this->assertFalse($r);
     }
 
@@ -607,7 +1204,9 @@ class Tests_Auth_OpenID_CheckAuthResponse extends _TestIdRes {
     {
         // check_authentication returns false when is_valid is false
         $response = array('is_valid' => 'false');
-        $r = $this->consumer->_processCheckAuthResponse($response, $this->server_url);
+        $message = Auth_OpenID_Message::fromOpenIDArgs($response);
+
+        $r = $this->consumer->_processCheckAuthResponse($message, $this->server_url);
         $this->assertFalse($r);
     }
 
@@ -619,7 +1218,9 @@ class Tests_Auth_OpenID_CheckAuthResponse extends _TestIdRes {
         $response = array('is_valid' => 'false',
                           'invalidate_handle' => 'handle');
 
-        $r = $this->consumer->_processCheckAuthResponse($response,
+        $message = Auth_OpenID_Message::fromOpenIDArgs($response);
+
+        $r = $this->consumer->_processCheckAuthResponse($message,
                                                         $this->server_url);
         $this->assertFalse($r);
         $this->assertTrue(
@@ -632,7 +1233,9 @@ class Tests_Auth_OpenID_CheckAuthResponse extends _TestIdRes {
         $response = array('is_valid' => 'true',
                           'invalidate_handle' => 'missing');
 
-        $r = $this->consumer->_processCheckAuthResponse($response, $this->server_url);
+        $message = Auth_OpenID_Message::fromOpenIDArgs($response);
+
+        $r = $this->consumer->_processCheckAuthResponse($message, $this->server_url);
         $this->assertTrue($r);
     }
 
@@ -643,7 +1246,9 @@ class Tests_Auth_OpenID_CheckAuthResponse extends _TestIdRes {
         $response = array('is_valid' => 'true',
                           'invalidate_handle' => 'handle');
 
-        $r = $this->consumer->_processCheckAuthResponse($response, $this->server_url);
+        $message = Auth_OpenID_Message::fromOpenIDArgs($response);
+
+        $r = $this->consumer->_processCheckAuthResponse($message, $this->server_url);
         $this->assertTrue($r);
         $this->assertTrue(
                   $this->consumer->store->getAssociation($this->server_url) === null);
@@ -653,7 +1258,7 @@ class Tests_Auth_OpenID_CheckAuthResponse extends _TestIdRes {
 class _IdResFetchFailingConsumer extends Auth_OpenID_GenericConsumer {
     var $message = 'fetch failed';
 
-    function _doIdRes($query, $endpoint)
+    function _doIdRes($message, $endpoint)
     {
         return new Auth_OpenID_FailureResponse($endpoint,
                                                $this->message);
@@ -666,7 +1271,8 @@ class Tests_Auth_OpenID_FetchErrorInIdRes extends _TestIdRes {
     function test_idResFailure()
     {
         $query = array('openid.mode' => 'id_res');
-        $r = $this->consumer->complete($query, $this->endpoint);
+        $message = Auth_OpenID_Message::fromPostArgs($query);
+        $r = $this->consumer->complete($message, $this->endpoint);
         $this->assertEquals($r->status, Auth_OpenID_FAILURE);
         $this->assertEquals($r->identity_url, $this->consumer_id);
         $this->assertEquals($this->consumer->message, $r->message);
@@ -682,12 +1288,17 @@ class _ExceptionRaisingMockFetcher {
     function post($url, $body)
     {
         __raiseError(E_MOCK_FETCHER_EXCEPTION);
+
+        return new Auth_Yadis_HTTPResponse($url, 400,
+                                               array(), '');
     }
 }
 
 class _BadArgCheckingConsumer extends Auth_OpenID_GenericConsumer {
-    function _makeKVPost($args, $tmp)
+    function _makeKVPost($message, $tmp)
     {
+        $args = $message->toPostArgs();
+
         if ($args != array(
             'openid.mode' => 'check_authentication',
             'openid.signed' => 'foo')) {
@@ -709,12 +1320,14 @@ class Tests_Auth_OpenID_Consumer_TestCheckAuth extends _TestIdRes {
     function test_checkauth_error()
     {
         global $_Auth_OpenID_server_url;
-        $this->fetcher->response = new Services_Yadis_HTTPResponse("http://some_url",
+        $this->fetcher->response = new Auth_Yadis_HTTPResponse("http://some_url",
                                                                 404,
                                                                 array(),
                                                                 "blah:blah\n");
         $query = array('openid.signed' => 'stuff, things');
-        $r = $this->consumer->_checkAuth($query, $_Auth_OpenID_server_url);
+        $message = Auth_OpenID_Message::fromPostArgs($query);
+
+        $r = $this->consumer->_checkAuth($message, $_Auth_OpenID_server_url);
         if ($r !== false) {
             $this->fail("Expected _checkAuth result to be false");
         }
@@ -726,8 +1339,32 @@ class Tests_Auth_OpenID_Consumer_TestCheckAuth extends _TestIdRes {
                        'closid.foo' => 'something');
 
         $consumer = new _BadArgCheckingConsumer($this->store);
-        $consumer->_checkAuth($query, 'does://not.matter');
-        $this->assertEquals(__getError(), E_ASSERTION_ERROR);
+
+        $message = Auth_OpenID_Message::fromPostArgs($query);
+
+        $this->assertFalse($consumer->_checkAuth($message, 'does://not.matter'));
+    }
+
+    function test_signedList()
+    {
+        $query = Auth_OpenID_Message::fromOpenIDArgs(array(
+            'mode'=> 'id_res',
+            'sig'=> 'rabbits',
+            'identity'=> '=example',
+            'assoc_handle'=> 'munchkins',
+            'signed'=> 'identity,mode',
+            'foo'=> 'bar'));
+
+        $expected = Auth_OpenID_Message::fromOpenIDArgs(array(
+            'mode'=> 'check_authentication',
+            'sig'=> 'rabbits',
+            'assoc_handle'=> 'munchkins',
+            'identity'=> '=example',
+            'signed'=> 'identity,mode'
+            ));
+
+        $args = $this->consumer->_createCheckAuthRequest($query);
+        $this->assertEquals($args->toPostArgs(), $expected->toPostArgs());
     }
 }
 
@@ -742,22 +1379,41 @@ class Tests_Auth_OpenID_Consumer_TestFetchAssoc extends PHPUnit_TestCase {
 
     function test_kvpost_error()
     {
-        $this->fetcher->response = new Services_Yadis_HTTPResponse("http://some_url",
+        $this->fetcher->response = new Auth_Yadis_HTTPResponse("http://some_url",
                                                                    404,
                                                                    array(),
                                                                    "blah:blah\n");
-        $r = $this->consumer->_makeKVPost(array('openid.mode' => 'associate'),
+        $query = array('openid.mode' => 'associate');
+        $message = Auth_OpenID_Message::fromPostArgs($query);
+
+        $r = $this->consumer->_makeKVPost($message,
                                           "http://server_url");
         if ($r !== null) {
             $this->fail("Expected _makeKVPost result to be null");
         }
     }
 
+    function test_error_404()
+    {
+        // 404 from a kv post raises HTTPFetchingError
+        $this->fetcher->response = new Auth_Yadis_HTTPResponse(
+           "http://some_url", 404, array('Hea'=> 'der'), 'blah:blah\n');
+
+        $result = $this->consumer->_makeKVPost(
+               Auth_OpenID_Message::fromPostArgs(array('mode'=>'associate')),
+               "http://server_url");
+
+        $this->assertTrue($result === null);
+    }
+
     function test_error_exception()
     {
         $this->consumer->fetcher = new _ExceptionRaisingMockFetcher();
 
-        $this->consumer->_makeKVPost(array('openid.mode' => 'associate'),
+        $query = array('openid.mode' => 'associate');
+        $message = Auth_OpenID_Message::fromPostArgs($query);
+
+        $this->consumer->_makeKVPost($message,
                                      "http://server_url");
 
         if (__getError() !== E_MOCK_FETCHER_EXCEPTION) {
@@ -765,10 +1421,17 @@ class Tests_Auth_OpenID_Consumer_TestFetchAssoc extends PHPUnit_TestCase {
                         "raise E_MOCK_FETCHER_EXCEPTION");
         }
 
-        // exception fetching returns no association
-        $this->assertEquals(@$this->consumer->_getAssociation('some://url'), null);
+        $endpoint = new Auth_OpenID_ServiceEndpoint();
+        $endpoint->server_url = 'some://url';
 
-        $this->consumer->_checkAuth(array('openid.signed' => ''),
+        // exception fetching returns no association
+        $this->assertEquals($this->consumer->_getAssociation($endpoint),
+                            null);
+
+        $query = array('openid.signed' => '');
+        $message = Auth_OpenID_Message::fromPostArgs($query);
+
+        $this->consumer->_checkAuth($message,
                                     'some://url');
 
         if (__getError() !== E_MOCK_FETCHER_EXCEPTION) {
@@ -778,173 +1441,80 @@ class Tests_Auth_OpenID_Consumer_TestFetchAssoc extends PHPUnit_TestCase {
     }
 }
 
-class Tests_Auth_OpenID_AuthRequest extends PHPUnit_TestCase {
-    function setUp()
-    {
-        $this->endpoint = new Auth_OpenID_ServiceEndpoint();
-        $this->endpoint->delegate = 'http://server.unittest/joe';
-        $this->endpoint->server_url = 'http://server.unittest/';
-        $this->assoc =& $this;
-        $this->assoc->handle = 'assoc@handle';
-        $this->authreq = new Auth_OpenID_AuthRequest($this->endpoint, $this->assoc);
-    }
-
-    function test_addExtensionArg()
-    {
-        $this->authreq->addExtensionArg('bag', 'color', 'brown');
-        $this->authreq->addExtensionArg('bag', 'material', 'paper');
-        $this->assertEquals($this->authreq->extra_args,
-                            array('openid.bag.color' => 'brown',
-                                  'openid.bag.material' => 'paper'));
-        $url = $this->authreq->redirectURL('http://7.utest/', 'http://7.utest/r');
-        $this->failUnless(strpos($url, 'openid.bag.color=brown') !== false,
-                          'extension arg not found in '.$url);
-        $this->failUnless(strpos($url, 'openid.bag.material=paper') !== false,
-                          'extension arg not found in '.$url);
-    }
-}
-
 class Tests_Auth_OpenID_SuccessResponse extends PHPUnit_TestCase {
     function setUp()
     {
         $this->endpoint = new Auth_OpenID_ServiceEndpoint();
-        $this->endpoint->identity_url = 'identity_url';
+        $this->endpoint->claimed_id = 'identity_url';
     }
 
     function test_extensionResponse()
     {
-        $resp = SuccessResponse($this->endpoint, array(
+        $uri = "http://bogus.unittest/1.0";
+
+        $query = array(
+            'openid.ns.unittest' => $uri,
             'openid.unittest.one' => '1',
             'openid.unittest.two' =>'2',
             'openid.sreg.nickname' => 'j3h',
-            'openid.return_to' => 'return_to'));
+            'openid.return_to' => 'return_to');
 
-        $utargs = $resp->extensionResponse('unittest');
+        $message = Auth_OpenID_Message::fromPostArgs($query);
+        $resp = new Auth_OpenID_SuccessResponse($this->endpoint, $message);
+
+        $utargs = $resp->extensionResponse($uri, false);
         $this->assertEquals($utargs, array('one' => '1', 'two' => '2'));
-        $sregargs = $resp->extensionResponse('sreg');
+        $sregargs = $resp->extensionResponse(Auth_OpenID_SREG_NS_URI, false);
         $this->assertEquals($sregargs, array('nickname' => 'j3h'));
+    }
+
+    function test_extensionResponseSigned()
+    {
+        $args = array(
+            'ns.sreg' => 'urn:sreg',
+            'ns.unittest' => 'urn:unittest',
+            'unittest.one' => '1',
+            'unittest.two' => '2',
+            'sreg.nickname' => 'j3h',
+            'sreg.dob' => 'yesterday',
+            'return_to' => 'return_to',
+            'signed' => 'sreg.nickname,unittest.one,sreg.dob');
+
+        $signed_list = array('openid.sreg.nickname',
+                             'openid.unittest.one',
+                             'openid.sreg.dob');
+
+        $msg = Auth_OpenID_Message::fromOpenIDArgs($args);
+        $resp = new Auth_OpenID_SuccessResponse($this->endpoint, $msg, $signed_list);
+
+        // All args in this NS are signed, so expect all.
+        $sregargs = $resp->extensionResponse('urn:sreg', true);
+        $this->assertEquals($sregargs,
+                            array('nickname' => 'j3h',
+                                  'dob' => 'yesterday'));
+
+        // Not all args in this NS are signed, so expect null when
+        // asking for them.
+        $utargs = $resp->extensionResponse('urn:unittest', true);
+        $this->assertEquals($utargs, null);
     }
 
     function test_noReturnTo()
     {
-        $resp = SuccessResponse($this->endpoint, array());
-        $this->failUnless($resp->getReturnTo() === null);
+        $message = Auth_OpenID_Message::fromPostArgs(array());
+        $resp = new Auth_OpenID_SuccessResponse($this->endpoint, $message);
+        $this->assertTrue($resp->getReturnTo() === null);
     }
 
     function test_returnTo()
     {
-        $resp = SuccessResponse($this->endpoint,
-                                array('openid.return_to' => 'return_to'));
+        $query = array('openid.return_to' => 'return_to');
+        $message = Auth_OpenID_Message::fromPostArgs($query);
+
+        $resp = new Auth_OpenID_SuccessResponse($this->endpoint,
+                                                $message, array('openid.return_to'));
+
         $this->assertEquals($resp->getReturnTo(), 'return_to');
-    }
-}
-
-class Tests_Auth_OpenID_ParseAssociation extends _TestIdRes {
-    var $secret = '';
-
-    function setUp()
-    {
-      parent::setUp();
-      $this->secret = str_repeat('x', 20);
-    }
-
-    function test_missing()
-    {
-        // Missing required arguments
-        $result = $this->consumer->_parseAssociation(array(), null, 'server_url');
-        $this->assertTrue($result === null);
-    }
-
-    function _setUpDH()
-    {
-        list($sess, $args) = $this->consumer->_createAssociateRequest($this->server_url);
-        $server_sess = Auth_OpenID_DiffieHellmanServerSession::fromQuery($args);
-        $server_resp = $server_sess->answer($this->secret);
-        $server_resp['assoc_type'] = 'HMAC-SHA1';
-        $server_resp['assoc_handle'] = 'handle';
-        $server_resp['expires_in'] = '1000';
-        $server_resp['session_type'] = 'DH-SHA1';
-        return array($sess, $server_resp);
-    }
-
-    function test_success()
-    {
-        list($sess, $server_resp) = $this->_setUpDH();
-        $ret = $this->consumer->_parseAssociation($server_resp, $sess,
-                                                  'server_url');
-        $this->assertTrue($ret !== null);
-        $this->assertEquals($ret->assoc_type, 'HMAC-SHA1');
-        $this->assertEquals($ret->secret, $this->secret);
-        $this->assertEquals($ret->handle, 'handle');
-        $this->assertEquals($ret->lifetime, 1000);
-    }
-
-    function test_badAssocType()
-    {
-        list($sess, $server_resp) = $this->_setUpDH();
-        $server_resp['assoc_type'] = 'Crazy Low Prices!!!';
-        $ret = $this->consumer->_parseAssociation($server_resp, $sess,
-                                                  'server_url');
-        $this->assertTrue($ret === null);
-    }
-
-    function test_badExpiresIn()
-    {
-        list($sess, $server_resp) = $this->_setUpDH();
-        $server_resp['expires_in'] = 'Crazy Low Prices!!!';
-        $ret = $this->consumer->_parseAssociation($server_resp, $sess,
-                                                  'server_url');
-        $this->assertTrue($ret === null);
-    }
-
-    function test_badSessionType()
-    {
-        list($sess, $server_resp) = $this->_setUpDH();
-        $server_resp['session_type'] = '|/iA6rA';
-        $ret = $this->consumer->_parseAssociation($server_resp, $sess,
-                                                  'server_url');
-        $this->assertTrue($ret === null);
-    }
-
-    function test_plainFallback()
-    {
-        $sess = new Auth_OpenID_DiffieHellmanConsumerSession();
-        $server_resp = array(
-                             'assoc_type' => 'HMAC-SHA1',
-                             'assoc_handle' => 'handle',
-                             'expires_in' => '1000',
-                             'mac_key' => base64_encode($this->secret));
-
-        $ret = $this->consumer->_parseAssociation($server_resp, $sess,
-                                                  'server_url');
-        $this->assertTrue($ret !== null);
-        $this->assertEquals($ret->assoc_type, 'HMAC-SHA1');
-        $this->assertEquals($ret->secret, $this->secret);
-        $this->assertEquals($ret->handle, 'handle');
-        $this->assertEquals($ret->lifetime, 1000);
-    }
-
-    function test_plainFallbackFailure()
-    {
-        $sess = new Auth_OpenID_DiffieHellmanConsumerSession();
-        // missing mac_key
-        $server_resp = array(
-            'assoc_type' => 'HMAC-SHA1',
-            'assoc_handle' => 'handle',
-            'expires_in' => '1000');
-
-        $ret = $this->consumer->_parseAssociation($server_resp, $sess,
-                                                  'server_url');
-        $this->assertTrue($ret === null);
-    }
-
-    function test_badDHValues()
-    {
-        list($sess, $server_resp) = $this->_setUpDH();
-        $server_resp['enc_mac_key'] = "\x00\x00\x00";
-        $ret = $this->consumer->_parseAssociation($server_resp, $sess,
-                                                  'server_url');
-        $this->assertTrue($ret === null);
     }
 }
 
@@ -959,14 +1529,37 @@ class _StubConsumer {
 
     function begin($service)
     {
-        $auth_req = new Auth_OpenID_AuthRequest($this->assoc, $service);
+        $auth_req = new Auth_OpenID_AuthRequest($service, $this->assoc);
         $this->endpoint = $service;
         return $auth_req;
     }
 
-    function complete($query, $endpoint)
+    function complete($message, $endpoint)
     {
         return $this->response;
+    }
+}
+
+class Tests_Auth_OpenID_DiscoFailure extends PHPUnit_TestCase {
+    var $consumerClass = null;
+
+    function setUp()
+    {
+        foreach ($_SESSION as $k => $v) {
+          unset($_SESSION[$k]);
+        }
+
+        $this->endpoint = new Auth_OpenID_ServiceEndpoint();
+        $this->claimed_id = 'http://identity.url/';
+        $this->endpoint->claimed_id = $this->claimed_id;
+        $this->store = null;
+        $this->session = new Auth_Yadis_PHPSession();
+        $cls = $this->consumerClass;
+        $this->consumer =& new $cls($this->store, &$this->session);
+        $this->consumer->consumer =& new _StubConsumer();
+        $this->discovery =& new Auth_Yadis_Discovery(&$this->session,
+                                         $this->claimed_id,
+                                         $this->consumer->session_key_prefix);
     }
 }
 
@@ -978,14 +1571,14 @@ class Tests_Auth_OpenID_ConsumerTest2 extends PHPUnit_TestCase {
         }
 
         $this->endpoint = new Auth_OpenID_ServiceEndpoint();
-        $this->identity_url = 'http://identity.url/';
-        $this->endpoint->identity_url = $this->identity_url;
+        $this->claimed_id = 'http://identity.url/';
+        $this->endpoint->claimed_id = $this->claimed_id;
         $this->store = null;
-        $this->session = new Services_Yadis_PHPSession();
-        $this->consumer =& new Auth_OpenID_Consumer($this->store, &$this->session);
+        $this->session = new Auth_Yadis_PHPSession();
+        $this->consumer =& new Auth_OpenID_Consumer($this->store, $this->session);
         $this->consumer->consumer =& new _StubConsumer();
-        $this->discovery =& new Services_Yadis_Discovery(&$this->session,
-                                         $this->identity_url,
+        $this->discovery =& new Auth_Yadis_Discovery(&$this->session,
+                                         $this->claimed_id,
                                          $this->consumer->session_key_prefix);
     }
 
@@ -1032,7 +1625,7 @@ class Tests_Auth_OpenID_ConsumerTest2 extends PHPUnit_TestCase {
 
         // All responses should have the same identity URL, and the
         // session should be cleaned out
-        $this->assertTrue($resp->identity_url == $this->identity_url);
+        $this->assertTrue($resp->identity_url == $this->claimed_id);
         $this->assertFalse(in_array($this->consumer->_token_key,
                                     $_SESSION)); // this->session->data));
 
@@ -1055,8 +1648,9 @@ class Tests_Auth_OpenID_ConsumerTest2 extends PHPUnit_TestCase {
 
     function test_noDiscoCompleteSuccessWithToken()
     {
+        $message = Auth_OpenID_Message::fromPostArgs(array());
         $this->_doRespNoDisco(new Auth_OpenID_SuccessResponse($this->endpoint,
-                                                              array()));
+                                                              $message));
     }
 
     function test_noDiscoCompleteCancelWithToken()
@@ -1085,8 +1679,8 @@ class Tests_Auth_OpenID_ConsumerTest2 extends PHPUnit_TestCase {
     {
         // Set up and execute a transaction, with discovery
         $this->discovery->createManager(array($this->endpoint),
-                                        $this->identity_url);
-        $auth_req = $this->consumer->begin($this->identity_url);
+                                        $this->claimed_id);
+        $auth_req = $this->consumer->begin($this->claimed_id);
         $resp = $this->_doResp($auth_req, $exp_resp);
 
         $manager = $this->discovery->getManager();
@@ -1102,9 +1696,10 @@ class Tests_Auth_OpenID_ConsumerTest2 extends PHPUnit_TestCase {
     // Cancel and success DO clean up the discovery process
     function test_completeSuccess()
     {
+        $message = Auth_OpenID_Message::fromPostArgs(array());
         $this->_doRespDisco(true,
                             new Auth_OpenID_SuccessResponse($this->endpoint,
-                                                            array()));
+                                                            $message));
     }
 
     function test_completeCancel()
@@ -1134,9 +1729,9 @@ class Tests_Auth_OpenID_ConsumerTest2 extends PHPUnit_TestCase {
     function test_begin()
     {
         $this->discovery->createManager(array($this->endpoint),
-                                        $this->identity_url);
+                                        $this->claimed_id);
         // Should not raise an exception
-        $auth_req = $this->consumer->begin($this->identity_url);
+        $auth_req = $this->consumer->begin($this->claimed_id);
         $this->assertTrue(strtolower(get_class($auth_req)) === 'auth_openid_authrequest');
         $this->assertTrue($auth_req->endpoint == $this->endpoint);
         $this->assertTrue($auth_req->endpoint == $this->consumer->consumer->endpoint);
@@ -1144,18 +1739,393 @@ class Tests_Auth_OpenID_ConsumerTest2 extends PHPUnit_TestCase {
     }
 }
 
+class IDPDrivenTest_Consumer1 extends Auth_OpenID_GenericConsumer {
+    var $iverified = array();
+    var $endpoint = null;
+
+    function _idResCheckNonce($message, $endpoint)
+    {
+        return true;
+    }
+
+    function _verifyDiscoveryResults($identifier, $server_url)
+    {
+        $this->iverified[] = $this->endpoint;
+        return $this->endpoint;
+    }
+}
+
+class IDPDrivenTest_Consumer2 extends Auth_OpenID_GenericConsumer {
+    function verifyDiscoveryResults($identifier, $server_url)
+    {
+        return new Auth_OpenID_FailureResponse(null,
+                                               "Bogus");
+    }
+}
+
+class IDPDrivenTest extends PHPUnit_TestCase {
+    function setUp()
+    {
+        $this->store = new GoodAssocStore();
+        $this->consumer = new Auth_OpenID_GenericConsumer($this->store);
+        $this->endpoint = new Auth_OpenID_ServiceEndpoint();
+        $this->endpoint->server_url = "http://idp.unittest/";
+    }
+
+    function test_idpDrivenBegin()
+    {
+        // Testing here that the token-handling doesn't explode...
+        $this->assertTrue($this->consumer->begin($this->endpoint) !== null);
+    }
+
+    function test_idpDrivenComplete()
+    {
+        global $GOODSIG;
+
+        $this->consumer = new IDPDrivenTest_Consumer1($this->store);
+
+        $identifier = '=directed_identifier';
+        $message = Auth_OpenID_Message::fromPostArgs(array(
+            'openid.identity'=> '=directed_identifier',
+            'openid.return_to'=> 'x',
+            'openid.assoc_handle'=> 'z',
+            'openid.signed'=> 'identity,return_to',
+            'openid.sig'=> $GOODSIG));
+
+        $endpoint = new Auth_OpenID_ServiceEndpoint();
+        $endpoint->claimed_id = $identifier;
+        $endpoint->server_url = $this->endpoint->server_url;
+        $endpoint->local_id = $identifier;
+
+        $this->consumer->endpoint =& $endpoint;
+        $response = $this->consumer->_doIdRes($message, $this->endpoint);
+
+        $this->failUnlessSuccess($response);
+
+        $this->assertEquals($response->identity_url, "=directed_identifier");
+
+        // assert that discovery attempt happens and returns good
+        $this->assertEquals($this->consumer->iverified, array($endpoint));
+    }
+
+    function test_idpDrivenCompleteFraud()
+    {
+        global $GOODSIG;
+
+        $this->consumer = new IDPDrivenTest_Consumer2($this->store);
+
+        // crap with an identifier that doesn't match discovery info
+        $message = Auth_OpenID_Message::fromPostArgs(array(
+            'openid.identity'=> '=directed_identifier',
+            'openid.return_to'=> 'x',
+            'openid.assoc_handle'=> 'z',
+            'openid.signed'=> 'identity,return_to',
+            'openid.sig'=> $GOODSIG));
+
+        $result = $this->consumer->_doIdRes($message, $this->endpoint);
+        $this->assertTrue(Auth_OpenID::isFailure($result));
+    }
+
+    function failUnlessSuccess($response)
+    {
+        if ($response->status != Auth_OpenID_SUCCESS) {
+            $this->fail("Non-successful response (status is ".$response->status.")");
+        }
+    }
+}
+
+class TestDiscoveryVerification extends PHPUnit_TestCase {
+    var $services = array();
+
+    function discoveryFunc($identifier)
+    {
+        return array($identifier, $this->services);
+    }
+
+    function setUp()
+    {
+        $this->store = new GoodAssocStore();
+        $this->consumer = new Auth_OpenID_GenericConsumer($this->store);
+        $this->consumer->discoverMethod = array($this,
+                                                'discoveryFunc');
+
+        $this->identifier = "http://idp.unittest/1337";
+        $this->server_url = "http://endpoint.unittest/";
+
+        $this->message = Auth_OpenID_Message::fromPostArgs(array(
+            'openid.ns'=> Auth_OpenID_OPENID2_NS,
+            'openid.identity'=> $this->identifier,
+            'openid.claimed_id'=> $this->identifier,
+            'openid.op_endpoint'=> $this->server_url));
+
+        $this->endpoint = new Auth_OpenID_ServiceEndpoint();
+        $this->endpoint->server_url = $this->server_url;
+    }
+
+    function test_theGoodStuff()
+    {
+        $endpoint = new Auth_OpenID_ServiceEndpoint();
+        $endpoint->type_uris = array(Auth_OpenID_TYPE_2_0);
+        $endpoint->claimed_id = $this->identifier;
+        $endpoint->server_url = $this->server_url;
+        $endpoint->local_id = $this->identifier;
+        $this->services = array($endpoint);
+        $r = $this->consumer->_verifyDiscoveryResults($this->message, $endpoint);
+
+        $this->assertEquals($r, $endpoint);
+    }
+
+    function test_otherServer()
+    {
+        // a set of things without the stuff
+        $endpoint = new Auth_OpenID_ServiceEndpoint();
+        $endpoint->type_uris = array(Auth_OpenID_TYPE_2_0);
+        $endpoint->claimed_id = $this->identifier;
+        $endpoint->server_url = "http://the-MOON.unittest/";
+        $endpoint->local_id = $this->identifier;
+        $this->services = array($endpoint);
+
+        $result = $this->consumer->_verifyDiscoveryResults(
+                                 $this->message, $endpoint);
+
+        $this->assertTrue(Auth_OpenID::isFailure($result));
+    }
+
+    function test_foreignDelegate()
+    {
+        // a set of things with the server stuff but other delegate
+        $endpoint = new Auth_OpenID_ServiceEndpoint();
+        $endpoint->type_uris = array(Auth_OpenID_TYPE_2_0);
+        $endpoint->claimed_id = $this->identifier;
+        $endpoint->server_url = $this->server_url;
+        $endpoint->local_id = "http://unittest/juan-carlos";
+
+        $result = $this->consumer->_verifyDiscoveryResults(
+                                 $this->message, $endpoint);
+        $this->assertTrue(Auth_OpenID::isFailure($result));
+    }
+
+    function test_nothingDiscovered()
+    {
+        // a set of no things.
+        $this->services = array();
+        $result = $this->consumer->_verifyDiscoveryResults(
+                                 $this->message, $this->endpoint);
+        $this->assertTrue(Auth_OpenID::isFailure($result));
+    }
+}
+
+class DummyEndpoint {
+    var $use_compatibility = false;
+
+    function compatibilityMode()
+    {
+        return $this->use_compatibility;
+    }
+}
+
+class TestCreateAssociationRequest extends PHPUnit_TestCase {
+    function setUp()
+    {
+        $this->endpoint = new DummyEndpoint();
+        $s = null;
+        $this->consumer = new Auth_OpenID_GenericConsumer($s);
+        $this->assoc_type = 'HMAC-SHA1';
+    }
+
+    function test_noEncryptionSendsType()
+    {
+        $session_type = 'no-encryption';
+        list($session, $args) = $this->consumer->_createAssociateRequest(
+                       $this->endpoint, $this->assoc_type, $session_type);
+
+        $this->assertTrue(is_a($session, 'Auth_OpenID_PlainTextConsumerSession'));
+
+        $expected = Auth_OpenID_Message::fromOpenIDArgs(
+                                                        array('ns' => Auth_OpenID_OPENID2_NS,
+                                                              'session_type'=>$session_type,
+                                                              'mode'=>'associate',
+                                                              'assoc_type'=>$this->assoc_type));
+
+        $this->assertEquals($expected->toPostArgs(),
+                            $args->toPostArgs());
+    }
+
+    function test_noEncryptionCompatibility()
+    {
+        $this->endpoint->use_compatibility = true;
+        $session_type = 'no-encryption';
+        list($session, $args) = $this->consumer->_createAssociateRequest(
+                       $this->endpoint, $this->assoc_type, $session_type);
+
+        $this->assertTrue(is_a($session, 'Auth_OpenID_PlainTextConsumerSession'));
+        $this->assertEquals(Auth_OpenID_Message::fromOpenIDArgs(array('mode'=>'associate',
+                                                                      'assoc_type'=>$this->assoc_type)),
+                            $args);
+    }
+
+    function test_dhSHA1Compatibility()
+    {
+        // Set the consumer's session type to a fast session since we
+        // need it here.
+        setConsumerSession($this->consumer);
+
+        $this->endpoint->use_compatibility = true;
+        $session_type = 'DH-SHA1';
+        list($session, $args) = $this->consumer->_createAssociateRequest(
+                       $this->endpoint, $this->assoc_type, $session_type);
+
+        $this->assertTrue(is_a($session,
+                               'Auth_OpenID_DiffieHellmanSHA1ConsumerSession'));
+
+        // This is a random base-64 value, so just check that it's
+        // present.
+        $this->assertTrue($args->hasKey(Auth_OpenID_OPENID1_NS, 'dh_consumer_public'));
+        $args->delArg(Auth_OpenID_OPENID1_NS, 'dh_consumer_public');
+
+        // OK, session_type is set here and not for no-encryption
+        // compatibility
+        $expected = Auth_OpenID_Message::fromOpenIDArgs(array('mode'=>'associate',
+                                                              'session_type'=>'DH-SHA1',
+                                                              'assoc_type'=>$this->assoc_type,
+                                                              'dh_modulus'=> 'BfvStQ==',
+                                                              'dh_gen'=> 'Ag=='));
+
+        $this->assertEquals($expected->toPostArgs(),
+                            $args->toPostArgs());
+    }
+}
+
+class TestDiffieHellmanResponseParameters extends PHPUnit_TestCase {
+    var $session_cls = null;
+    var $message_namespace = null;
+
+    function setUp()
+    {
+        // Pre-compute DH with small prime so tests run quickly.
+        $this->server_dh = new Auth_OpenID_DiffieHellman(100389557, 2);
+        $this->consumer_dh = new Auth_OpenID_DiffieHellman(100389557, 2);
+
+        $lib =& Auth_OpenID_getMathLib();
+
+        $cls = $this->session_cls;
+        $this->consumer_session = new $cls($this->consumer_dh);
+
+        // base64(btwoc(g ^ xb mod p))
+        $this->dh_server_public = $lib->longToBase64($this->server_dh->public);
+
+        $this->secret = Auth_OpenID_CryptUtil::randomString(
+                            $this->consumer_session->secret_size);
+
+        $this->enc_mac_key = base64_encode(
+            $this->server_dh->xorSecret($this->consumer_dh->public,
+                                        $this->secret,
+                                        $this->consumer_session->hash_func));
+
+        $this->msg = new Auth_OpenID_Message($this->message_namespace);
+    }
+
+    function testExtractSecret()
+    {
+        $this->msg->setArg(Auth_OpenID_OPENID_NS, 'dh_server_public',
+                           $this->dh_server_public);
+
+        $this->msg->setArg(Auth_OpenID_OPENID_NS, 'enc_mac_key',
+                           $this->enc_mac_key);
+
+        $extracted = $this->consumer_session->extractSecret($this->msg);
+        $this->assertEquals($extracted, $this->secret);
+    }
+
+    function testAbsentServerPublic()
+    {
+        $this->msg->setArg(Auth_OpenID_OPENID_NS, 'enc_mac_key',
+                           $this->enc_mac_key);
+
+        $this->assertTrue($this->consumer_session->extractSecret($this->msg) === null);
+    }
+
+    function testAbsentMacKey()
+    {
+        $this->msg->setArg(Auth_OpenID_OPENID_NS, 'dh_server_public',
+                           $this->dh_server_public);
+
+        $this->assertTrue($this->consumer_session->extractSecret($this->msg) === null);
+    }
+
+    /*
+    function testInvalidBase64Public()
+    {
+        $this->msg->setArg(Auth_OpenID_OPENID_NS, 'dh_server_public',
+                           'n o t b a s e 6 4.');
+
+        $this->msg->setArg(Auth_OpenID_OPENID_NS, 'enc_mac_key',
+                           $this->enc_mac_key);
+
+        $this->assertTrue($this->consumer_session->extractSecret($this->msg) === null);
+    }
+
+    function testInvalidBase64MacKey()
+    {
+        $this->msg->setArg(Auth_OpenID_OPENID_NS, 'dh_server_public',
+                           $this->dh_server_public);
+
+        $this->msg->setArg(Auth_OpenID_OPENID_NS, 'enc_mac_key',
+                           'n o t base 64');
+
+        $this->assertTrue($this->consumer_session->extractSecret($this->msg) === null);
+    }
+    */
+}
+
+class TestOpenID1SHA1 extends TestDiffieHellmanResponseParameters {
+    var $session_cls = 'Auth_OpenID_DiffieHellmanSHA1ConsumerSession';
+    var $message_namespace = Auth_OpenID_OPENID1_NS;
+}
+
+class TestOpenID2SHA1 extends TestDiffieHellmanResponseParameters {
+    var $session_cls = 'Auth_OpenID_DiffieHellmanSHA1ConsumerSession';
+    var $message_namespace = Auth_OpenID_OPENID2_NS;
+}
+
+if (!defined('Auth_OpenID_NO_MATH_SUPPORT') &&
+    Auth_OpenID_SHA256_SUPPORTED) {
+    class TestOpenID2SHA256 extends TestDiffieHellmanResponseParameters {
+        var $session_cls = 'Auth_OpenID_DiffieHellmanSHA256ConsumerSession';
+        var $message_namespace = Auth_OpenID_OPENID2_NS;
+    }
+}
+
 // Add other test cases to be run.
+global $Tests_Auth_OpenID_Consumer_other;
 $Tests_Auth_OpenID_Consumer_other = array(
-                                          new Tests_Auth_OpenID_Consumer_TestSetupNeeded(),
+                                          // new Tests_Auth_OpenID_Consumer_TestSetupNeeded(),
                                           new Tests_Auth_OpenID_Consumer_TestCheckAuth(),
                                           new Tests_Auth_OpenID_Consumer_TestCheckAuthTriggered(),
                                           new Tests_Auth_OpenID_Consumer_TestFetchAssoc(),
                                           new Tests_Auth_OpenID_Consumer_CheckNonceTest(),
                                           new Tests_Auth_OpenID_Complete(),
+                                          new Tests_Auth_OpenID_SuccessResponse(),
                                           new Tests_Auth_OpenID_CheckAuthResponse(),
                                           new Tests_Auth_OpenID_FetchErrorInIdRes(),
-                                          new Tests_Auth_OpenID_ParseAssociation(),
-                                          new Tests_Auth_OpenID_ConsumerTest2()
+                                          new Tests_Auth_OpenID_ConsumerTest2(),
+                                          new Tests_Auth_OpenID_Stateless1(),
+                                          new Tests_Auth_OpenID_Stateless2(),
+                                          new TestCompleteMissingSig(),
+                                          new TestReturnToArgs(),
+                                          new IDPDrivenTest(),
+                                          new TestDiscoveryVerification(),
                                           );
+
+if (!defined('Auth_OpenID_NO_MATH_SUPPORT')) {
+    $Tests_Auth_OpenID_Consumer_other[] = new TestCreateAssociationRequest();
+    $Tests_Auth_OpenID_Consumer_other[] = new TestOpenID1SHA1();
+    $Tests_Auth_OpenID_Consumer_other[] = new TestOpenID2SHA1();
+}
+
+if (!defined('Auth_OpenID_NO_MATH_SUPPORT') &&
+    Auth_OpenID_SHA256_SUPPORTED) {
+    $Tests_Auth_OpenID_Consumer_other[] = new TestOpenID2SHA256();
+}
 
 ?>

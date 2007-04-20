@@ -15,7 +15,7 @@ define('page_template',
   </body>
 </html>');
 
-define('logged_in_pat', 'You are logged in as %s.');
+define('logged_in_pat', 'You are logged in as %s (URL: %s)');
 
 /**
  * HTTP response line contstants
@@ -31,7 +31,8 @@ define('http_internal_error', 'HTTP/1.1 500 Internal Error');
 define('header_connection_close', 'Connection: close');
 define('header_content_text', 'Content-Type: text/plain; charset=us-ascii');
 
-define('redirect_message', 'Please wait; you are being redirected to <%s>');
+define('redirect_message',
+       'Please wait; you are being redirected to <%s>');
 
 
 /**
@@ -87,10 +88,10 @@ function page_render($body, $user, $title, $h1=null, $login=false)
     $h1 = $h1 ? $h1 : $title;
 
     if ($user) {
-        $msg = sprintf(logged_in_pat, link_render($user));
-        $nav = array('logout' => 'Log Out',
-                     'sites' => 'Remembered Sites',
-                     );
+        $msg = sprintf(logged_in_pat, link_render(idURL($user), $user),
+                       link_render(idURL($user)));
+        $nav = array('logout' => 'Log Out');
+
         $navigation = navigation_render($msg, $nav);
     } else {
         if (!$login) {
