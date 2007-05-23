@@ -64,11 +64,16 @@ class OpenIDClient
 	{
 	}
 
-	function doAuthRequest($login, $redirectURI)
+	function doAuthRequest($login, $returnto_url)
 	{
 		if (! $this->isAuthRequestConditionOk()) {
 			return false;
 		}
+		
+		if (! isset($login) || empty($login)) {
+			return false;
+		}
+			
 		$this->initialize();
 	
 		$scheme = 'http';
@@ -76,15 +81,14 @@ class OpenIDClient
 			$scheme .= 's';
 		}
 
-		$returnto_url = sprintf("$scheme://%s:%s%s?%s",
-			$_SERVER['SERVER_NAME'],
-			$_SERVER['SERVER_PORT'],
-			$_SERVER['PHP_SELF'],
-			$_SERVER['QUERY_STRING']);
-		if (isset($redirectURI) && ! empty($redirectURI)) {
-			$returnto_url .= sprintf("/RedirectURI=%s", $redirectURI);
+		if (! isset($returnto_url) || empty($returnto_url)) {
+			$returnto_url = sprintf("$scheme://%s:%s%s?%s",
+				$_SERVER['SERVER_NAME'],
+				$_SERVER['SERVER_PORT'],
+				$_SERVER['PHP_SELF'],
+				$_SERVER['QUERY_STRING']);
 		}
-
+		
 		$trusted_root = sprintf("$scheme://%s:%s%s",
 			$_SERVER['SERVER_NAME'],
 			$_SERVER['SERVER_PORT'],
@@ -151,7 +155,7 @@ class OpenIDClient
 	}
 	
 	
-	function handleAuthResponse($currentUser)
+	function handleAuthResponse()
 	{
 		if (! $this->isAuthResponseConditionOk() ) {
 			return false;
@@ -160,7 +164,11 @@ class OpenIDClient
 		
 		$response = $this->consumer->complete();
 		
-		if ($response->status == Auth_OpenID_SUCCESS) {
+		if ($response->status == Auth_OpenID_CANCEL) {
+	    	return false;
+		} else if ($response->status == Auth_OpenID_FAILURE) {
+	    	return false;
+		} else if ($response->status == Auth_OpenID_SUCCESS) {
 	    	// This means the authentication succeeded.
 	    	$openid = $response->identity_url;
 	    	
