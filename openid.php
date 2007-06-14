@@ -118,39 +118,17 @@ class OpenIDClient
 		
 		// For OpenID 1, send a redirect.  For OpenID 2, use a Javascript
 		// form to send a POST request to the server.
-		if ($auth_request->shouldSendRedirect()) {
-			$redirect_url = $auth_request->redirectURL($trusted_root, $returnto_url);
+		$redirect_url = $auth_request->redirectURL($trusted_root, $returnto_url);
 
-			// If the redirect URL can't be built, display an error message.
-			if (Auth_OpenID::isFailure($redirect_url)) {
-				return false;
-			} else {
-				// Send redirect.
-				// session_write_close();
-				// ob_end_flush();
-				header("Location: ".$redirect_url);
-				exit();
-			}
+		// If the redirect URL can't be built, display an error message.
+		if (Auth_OpenID::isFailure($redirect_url)) {
+			return false;
 		} else {
-			// Generate form markup and render it.
-			$form_id = 'openid_message';
-			$form_html = $auth_request->formMarkup($trusted_root, $returnto_url,
-				false, array('id' => $form_id));
-
-			// Display an error if the form markup couldn't be generated;
-			// otherwise, render the HTML.
-			if (Auth_OpenID::isFailure($form_html)) {
-				return false;
-			} else {
-				$page_contents = array(
-					'<html><head><title>',
-					'OpenID transaction in progress',
-					'</title></head>',
-					'<body onload="document.getElementById(' . $form_id . ').submit()">',
-					$form_html,
-					'</body></html>');
-				print implode("\n", $page_contents);
-			}
+			// Send redirect.
+			// session_write_close();
+			// ob_end_flush();
+			header("Location: ".$redirect_url);
+			exit();
 		}
 	}
 	
