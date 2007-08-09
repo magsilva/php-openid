@@ -605,7 +605,7 @@ class Auth_OpenID_AssociateRequest extends Auth_OpenID_Request {
                                              'session_type');
             if ($session_type === null) {
                 return new Auth_OpenID_ServerError($message,
-                  "session_type missing from request");
+                  'session_type missing from request');
             }
         }
 
@@ -615,7 +615,7 @@ class Auth_OpenID_AssociateRequest extends Auth_OpenID_Request {
 
         if ($session_class === null) {
             return new Auth_OpenID_ServerError($message,
-                                               "Unknown session type " .
+                                               'Unknown session type ' .
                                                $session_type);
         }
 
@@ -629,7 +629,7 @@ class Auth_OpenID_AssociateRequest extends Auth_OpenID_Request {
                                        'assoc_type', 'HMAC-SHA1');
 
         if (!in_array($assoc_type, $session->allowed_assoc_types)) {
-            $fmt = "Session type %s does not support association type %s";
+            $fmt = 'Session type %s does not support association type %s';
             return new Auth_OpenID_ServerError($message,
               sprintf($fmt, $session_type, $assoc_type));
         }
@@ -1448,7 +1448,7 @@ class Auth_OpenID_Decoder {
         $mode = $message->getArg(Auth_OpenID_OPENID_NS, 'mode');
         if (!$mode) {
             return new Auth_OpenID_ServerError($message,
-                                               "No mode value in message");
+                                               'No mode value in message');
         }
 
         $handlerCls = Auth_OpenID::arrayGet($this->handlers, $mode,
@@ -1466,7 +1466,7 @@ class Auth_OpenID_Decoder {
     {
         $mode = $message->getArg(Auth_OpenID_OPENID_NS, 'mode');
         return new Auth_OpenID_ServerError($message,
-                       sprintf("No decoder for mode %s", $mode));
+                       sprintf('No decoder for mode %s', $mode));
     }
 }
 
