@@ -106,7 +106,8 @@ class OpenIDClient
 			// Required
 			array('nickname'),
 			// Optional
-			array('fullname', 'email'));
+			array('fullname', 'email')
+		);
 
 		if ($sreg_request) {
 			$auth_request->addExtension($sreg_request);
@@ -127,7 +128,7 @@ class OpenIDClient
 			// Send redirect.
 			// session_write_close();
 			// ob_end_flush();
-			header("Location: ".$redirect_url);
+			header('Location: ' . $redirect_url);
 			exit();
 		}
 	}
