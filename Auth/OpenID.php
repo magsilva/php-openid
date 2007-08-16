@@ -135,27 +135,32 @@ class Auth_OpenID {
      *
      * @access private
      */
-    function getQuery($query_str=null)
+    function getQuery($query_str = null)
     {
         if ($query_str !== null) {
             $str = $query_str;
-        } else if ($_SERVER['REQUEST_METHOD'] == 'GET') {
+        } else if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $str = $_SERVER['QUERY_STRING'];
-        } else if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+        } else if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $str = file_get_contents('php://input');
 
             if ($str === false) {
-                return array();
+            	$str = $GLOBALS['HTTP_RAW_POST_DATA'];
             }
+            
+            if (empty($str)) {
+            	return array();
+            }
+            
         } else {
             return array();
         }
 
-        $chunks = explode("&", $str);
+        $chunks = explode('&', $str);
 
         $data = array();
         foreach ($chunks as $chunk) {
-            $parts = explode("=", $chunk, 2);
+            $parts = explode('=', $chunk, 2);
 
             if (count($parts) != 2) {
                 continue;
