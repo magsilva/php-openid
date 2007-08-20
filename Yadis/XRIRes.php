@@ -20,14 +20,14 @@ class Yadis_ProxyResolver
         $this->fetcher =& $fetcher;
         $this->proxy_url = $proxy_url;
         if (!$this->proxy_url) {
-            $this->proxy_url = Yadis_getDefaultProxy();
+            $this->proxy_url = Yadis_XRI::getDefaultProxy();
         }
     }
 
     function queryURL($xri, $service_type = null)
     {
         // trim off the xri:// prefix
-        $qxri = substr(Yadis_toURINormal($xri), 6);
+        $qxri = substr(Yadis_XRI::toURINormal($xri), 6);
         $hxri = $this->proxy_url . $qxri;
         $args = array('_xrd_r' => 'application/xrds+xml');
 
@@ -38,7 +38,7 @@ class Yadis_ProxyResolver
             $args['_xrd_r'] .= ';sep=false';
         }
 
-        $query = Yadis_XRIAppendArgs($hxri, $args);
+        $query = Yadis_XRI::appendArgs($hxri, $args);
         return $query;
     }
 
@@ -56,7 +56,7 @@ class Yadis_ProxyResolver
             if (!$xrds) {
                 continue;
             }
-            $canonicalID = Yadis_getCanonicalID($xri, $xrds);
+            $canonicalID = Yadis_XRI::getCanonicalID($xri, $xrds);
 
             if ($canonicalID === false) {
                 return null;

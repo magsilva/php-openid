@@ -21,22 +21,21 @@
  */
 class Yadis_ParseHTML
 {
-
     /**
      * @access private
      */
-    var $_re_flags = "si";
+    var $_re_flags = 'si';
 
     /**
      * @access private
      */
     var $_removed_re =
-           "<!--.*?-->|<!\[CDATA\[.*?\]\]>|<script\b(?!:)[^>]*>.*?<\/script>";
+          '<!--.*?-->|<!\[CDATA\[.*?\]\]>|<script\b(?!:)[^>]*>.*?<\/script>';
 
     /**
      * @access private
      */
-    var $_tag_expr = "<%s%s(?:\s.*?)?%s>";
+    var $_tag_expr = '<%s%s(?:\s.*?)?%s>';
 
     /**
      * @access private
@@ -71,7 +70,7 @@ class Yadis_ParseHTML
     function replaceEntities($str)
     {
         foreach ($this->_entity_replacements as $old => $new) {
-            $str = preg_replace(sprintf("/&%s;/", $old), $new, $str);
+            $str = preg_replace(sprintf('/&%s;/', $old), $new, $str);
         }
 
         // Replace numeric entities because html_entity_decode doesn't
@@ -191,14 +190,12 @@ class Yadis_ParseHTML
         if (!is_null($key_tags_pos[0]) && $key_tags_pos[1] < $key_tags_pos[0]) {
             return array();
         }
-        $html_string = substr($html_string, $key_tags_pos[1],
-                              ($key_tags_pos[2]-$key_tags_pos[1]));
+        $html_string = substr($html_string, $key_tags_pos[1], ($key_tags_pos[2] - $key_tags_pos[1]));
 
         $link_data = array();
         $link_matches = array();
         
-        if (! preg_match_all($this->tagPattern('meta', false, 'maybe'),
-                            $html_string, $link_matches)) {
+        if (! preg_match_all($this->tagPattern('meta', false, 'maybe'), $html_string, $link_matches)) {
             return array();
         }
 

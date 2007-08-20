@@ -18,7 +18,7 @@
  * Interface import
  */
 require_once('Yadis/HTTPFetcher.php');
-require_once('HTTP/HTTP.php');
+require_once('common/HTTP.php');
 
 /**
  * This class implements a plain, hand-built socket-based fetcher
@@ -30,7 +30,7 @@ class Yadis_PlainHTTPFetcher extends Yadis_HTTPFetcher
 {
     function get($url, $extra_headers = null)
     {
-        if (!$this->allowedURL($url)) {
+        if (! $this->allowedURL($url)) {
             trigger_error('Bad URL scheme in url: ' . $url, E_USER_WARNING);
             return null;
         }
@@ -94,8 +94,8 @@ class Yadis_PlainHTTPFetcher extends Yadis_HTTPFetcher
 
             fputs($sock, implode("\r\n", $headers) . "\r\n\r\n");
 
-            $data = "";
-            while (!feof($sock)) {
+            $data = '';
+            while (! feof($sock)) {
                 $data .= fgets($sock, 1024);
             }
 
@@ -200,7 +200,7 @@ class Yadis_PlainHTTPFetcher extends Yadis_HTTPFetcher
 
         // Get the response from the server.
         $response = "";
-        while (!feof($sock)) {
+        while (! feof($sock)) {
             if ($data = fgets($sock, 128)) {
                 $response .= $data;
             } else {

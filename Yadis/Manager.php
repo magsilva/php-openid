@@ -7,6 +7,9 @@
  * @package Yadis
  */
 
+require_once('Yadis/Services.php');
+
+
 /**
  * The base session class used by the Yadis_Manager.  This class wraps the
  * default PHP session machinery and should be subclassed if your application
@@ -190,33 +193,6 @@ class Yadis_SessionLoader
     }
 }
 
-/**
- * A concrete loader implementation for OpenID_ServiceEndpoints.
- *
- * @package Yadis
- */
-class OpenID_ServiceEndpointLoader extends Yadis_SessionLoader
-{
-    function newObject($data)
-    {
-        return new OpenID_ServiceEndpoint();
-    }
-
-    function requiredKeys()
-    {
-        $obj = new OpenID_ServiceEndpoint();
-        $data = array();
-        foreach ($obj as $k => $v) {
-            $data[] = $k;
-        }
-        return $data;
-    }
-
-    function check($data)
-    {
-        return is_array($data['type_uris']);
-    }
-}
 
 /**
  * A concrete loader implementation for Yadis_Managers.
@@ -248,9 +224,10 @@ class Yadis_ManagerLoader extends Yadis_SessionLoader
         return is_array($data['services']);
     }
 
+	// TODO: For now, we just support OpenID.
     function prepareForLoad($data)
     {
-        $loader = new OpenID_ServiceEndpointLoader();
+        $loader = new Yadis_OpenID_ServiceEndpointLoader();
         $services = array();
         foreach ($data['services'] as $s) {
             $services[] = $loader->fromSession($s);
@@ -258,9 +235,10 @@ class Yadis_ManagerLoader extends Yadis_SessionLoader
         return array('services' => $services);
     }
 
+	// TODO: For now, we just support OpenID.
     function prepareForSave($obj)
     {
-        $loader = new OpenID_ServiceEndpointLoader();
+        $loader = new Yadis_OpenID_ServiceEndpointLoader();
         $services = array();
         foreach ($obj->services as $s) {
             $services[] = $loader->toSession($s);

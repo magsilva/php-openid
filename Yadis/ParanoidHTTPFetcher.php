@@ -16,7 +16,7 @@
 /**
  * Interface import
  */
-require_once('HTTP/HTTP.php');
+require_once('common/HTTP.php');
 require_once('Yadis/HTTPFetcher.php');
 
 /**
@@ -62,7 +62,12 @@ class Yadis_ParanoidHTTPFetcher extends Yadis_HTTPFetcher
 
         $redir = true;
 
-        while ($redir && ($off > 0)) {
+        if (!$this->allowedURL($url)) {
+           trigger_error(sprintf('Fetching URL not allowed: %s', $url), E_USER_WARNING);
+           return null;
+        }
+
+        while ($redir && $off > 0) {
             $this->reset();
 
             $c = curl_init();
@@ -70,10 +75,6 @@ class Yadis_ParanoidHTTPFetcher extends Yadis_HTTPFetcher
                 curl_setopt($c, CURLOPT_NOSIGNAL, true);
             }
 
-            if (!$this->allowedURL($url)) {
-                trigger_error(sprintf('Fetching URL not allowed: %s', $url), E_USER_WARNING);
-                return null;
-            }
 
             curl_setopt($c, CURLOPT_WRITEFUNCTION, array(&$this, '_writeData'));
             curl_setopt($c, CURLOPT_HEADERFUNCTION, array(&$this, '_writeHeader'));
@@ -89,28 +90,19 @@ class Yadis_ParanoidHTTPFetcher extends Yadis_HTTPFetcher
 
             $code = curl_getinfo($c, CURLINFO_HTTP_CODE);
             $body = $this->data;
-            $headers = $this->headers;
-
+    
             if (! $code) {
                 return null;
             }
 
             if (in_array($code, array(301, 302, 303, 307))) {
-                $url = HTTP::findRedirect($headers);
+                $url = HTTPUtil::findRedirect($this->headers);
                 $redir = true;
             } else {
                 $redir = false;
                 curl_close($c);
 
-                $new_headers = array();
-
-                foreach ($headers as $header) {
-                    if (preg_match('/:/', $header)) {
-                        list($name, $value) = explode(': ', $header, 2);
-                        $new_headers[$name] = $value;
-                    }
-                }
-
+                $new_headers = HTTPUtil::headersToArray($this->headers);
                 return new Yadis_HTTPResponse($url, $code, $new_headers, $body);
             }
 
@@ -145,7 +137,7 @@ class Yadis_ParanoidHTTPFetcher extends Yadis_HTTPFetcher
         $code = curl_getinfo($c, CURLINFO_HTTP_CODE);
 
         if (!$code) {
-            trigger_error("No HTTP code returned", E_USER_WARNING);
+            trigger_error('No HTTP code returned', E_USER_WARNING);
             return null;
         }
 
@@ -153,19 +145,12 @@ class Yadis_ParanoidHTTPFetcher extends Yadis_HTTPFetcher
 
         curl_close($c);
 
-        if ($extra_headers === null) {
+		if ($extra_headers === null) {
             $new_headers = null;
         } else {
             $new_headers = $extra_headers;
         }
-
-        foreach ($this->headers as $header) {
-            if (preg_match('/:/', $header)) {
-                list($name, $value) = explode(': ', $header, 2);
-                $new_headers[$name] = $value;
-            }
-
-        }
+        $new_headers = HTTPUtil::headersToArray($this->headers, $new_headers);
 
         return new Yadis_HTTPResponse($url, $code, $new_headers, $body);
     }

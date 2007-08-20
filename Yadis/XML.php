@@ -302,7 +302,7 @@ class Yadis_dom extends Yadis_XMLParser
  */
 class Yadis_XMLParser_Factory
 {
-	static $__Yadis_defaultParser = null;
+	var $__Yadis_defaultParser = null;
 
 	/**
 	 * Set a default parser to override the extension-driven selection of
@@ -315,7 +315,7 @@ class Yadis_XMLParser_Factory
 	 */
 	function setDefaultParser(&$parser)
 	{
-	    Yadis_XMLParser_Factory::__Yadis_defaultParser =& $parser;
+	    $Yadis_XMLParser_Factory->__Yadis_defaultParser =& $parser;
 	}
 
 	function getSupportedExtensions()
@@ -338,14 +338,14 @@ class Yadis_XMLParser_Factory
 	 */
 	function &getXMLParser()
 	{
-	    if (isset(Yadis_XMLParser_Factory::__Yadis_defaultParser)) {
-	        return Yadis_XMLParser_Factory::__Yadis_defaultParser;
+	    if (isset($Yadis_XMLParser_Factory->__Yadis_defaultParser)) {
+	        return $Yadis_XMLParser_Factory->__Yadis_defaultParser;
 	    }
 	
 	    $p = null;
 	    $classname = null;
 	
-	    $extensions = XMLParser_Factory::getSupportedExtensions();
+	    $extensions = Yadis_XMLParser_Factory::getSupportedExtensions();
 	
 	    // Return a wrapper for the resident implementation, if any.
 	    foreach ($extensions as $name => $params) {
@@ -367,7 +367,7 @@ class Yadis_XMLParser_Factory
 	    if (! isset($p)) {
 	        trigger_error('No XML parser was found', E_USER_ERROR);
 	    } else {
-	        XMLParser_Factory::setDefaultParser($p);
+	        Yadis_XMLParser_Factory::setDefaultParser($p);
 	    }
 	
 	    return $p;

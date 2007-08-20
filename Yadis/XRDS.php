@@ -16,6 +16,7 @@
  * Require the XPath implementation.
  */
 require_once('Yadis/XML.php');
+require_once('common/Array.php');
 
 /**
  * This match mode means a given service must match ALL filters passed
@@ -45,27 +46,7 @@ define('Yadis_XMLNS_XRD_2_0', 'xri://$xrd*($v*2.0)');
  */
 define('Yadis_XMLNS_XRDS', 'xri://$xrds');
 
-function Yadis_getNSMap()
-{
-    return array('xrds' => Yadis_XMLNS_XRDS,
-                 'xrd' => Yadis_XMLNS_XRD_2_0);
-}
 
-/**
- * @access private
- */
-function Yadis_array_scramble($arr)
-{
-    $result = array();
-
-    while (count($arr)) {
-        $index = array_rand($arr, 1);
-        $result[] = $arr[$index];
-        unset($arr[$index]);
-    }
-
-    return $result;
-}
 
 /**
  * This class represents a <Service> element in an XRDS document.
@@ -154,11 +135,11 @@ class Yadis_Service
         // Rebuild array of URIs.
         $result = array();
         foreach ($keys as $k) {
-            $new_uris = Yadis_array_scramble($uris[$k]);
+            $new_uris = ArrayUtil::scramble($uris[$k]);
             $result = array_merge($result, $new_uris);
         }
 
-        $result = array_merge($result, Yadis_array_scramble($last));
+        $result = array_merge($result, ArrayUtil::scramble($last));
 
         return $result;
     }
@@ -218,6 +199,11 @@ class Yadis_Service
  */
 class Yadis_XRDS
 {
+	function getNSMap()
+	{
+	    return array('xrds' => Yadis_XMLNS_XRDS,
+	                 'xrd' => Yadis_XMLNS_XRD_2_0);
+	}
 
     /**
      * Instantiate a Yadis_XRDS object.  Requires an XPath instance which has
@@ -250,7 +236,7 @@ class Yadis_XRDS
 
         $parser = Yadis_XMLParser_Factory::getXMLParser();
 
-        $ns_map = Yadis_getNSMap();
+        $ns_map = Yadis_XRDS::getNSMap();
 
         if ($extra_ns_map && is_array($extra_ns_map)) {
             $ns_map = array_merge($ns_map, $extra_ns_map);
