@@ -46,7 +46,7 @@ function Auth_Yadis_pct_escape_unicode($char_match)
     $c = $char_match[0];
     $result = "";
     for ($i = 0; $i < strlen($c); $i++) {
-        $result .= "%".sprintf("%X", ord($c[$i]));
+        $result .= '%' . sprintf('%X', ord($c[$i]));
     }
     return $result;
 }

@@ -4,7 +4,7 @@
  * Yadis service manager to be used during yadis-driven authentication
  * attempts.
  *
- * @package OpenID
+ * @package Yadis
  */
 
 /**
@@ -12,9 +12,10 @@
  * class wraps the default PHP session machinery and should be
  * subclassed if your application doesn't use PHP sessioning.
  *
- * @package OpenID
+ * @package Yadis
  */
-class Auth_Yadis_PHPSession {
+class Auth_Yadis_PHPSession
+{
     /**
      * Set a session key/value pair.
      *
@@ -71,9 +72,10 @@ class Auth_Yadis_PHPSession {
  * is that you'll subclass this and override $this->check($data) ->
  * bool to implement your own session data validation.
  *
- * @package OpenID
+ * @package Yadis
  */
-class Auth_Yadis_SessionLoader {
+class Auth_Yadis_SessionLoader
+{
     /**
      * Override this.
      *
@@ -96,14 +98,14 @@ class Auth_Yadis_SessionLoader {
      */
     function fromSession($data)
     {
-        if (!$data) {
+        if (! $data) {
             return null;
         }
 
         $required = $this->requiredKeys();
 
         foreach ($required as $k) {
-            if (!array_key_exists($k, $data)) {
+            if (! array_key_exists($k, $data)) {
                 return null;
             }
         }
@@ -191,9 +193,10 @@ class Auth_Yadis_SessionLoader {
 /**
  * A concrete loader implementation for Auth_OpenID_ServiceEndpoints.
  *
- * @package OpenID
+ * @package Yadis
  */
-class Auth_OpenID_ServiceEndpointLoader extends Auth_Yadis_SessionLoader {
+class Auth_OpenID_ServiceEndpointLoader extends Auth_Yadis_SessionLoader
+{
     function newObject($data)
     {
         return new Auth_OpenID_ServiceEndpoint();
@@ -218,9 +221,10 @@ class Auth_OpenID_ServiceEndpointLoader extends Auth_Yadis_SessionLoader {
 /**
  * A concrete loader implementation for Auth_Yadis_Managers.
  *
- * @package OpenID
+ * @package Yadis
  */
-class Auth_Yadis_ManagerLoader extends Auth_Yadis_SessionLoader {
+class Auth_Yadis_ManagerLoader extends Auth_Yadis_SessionLoader
+{
     function requiredKeys()
     {
         return array('starting_url',
@@ -271,17 +275,17 @@ class Auth_Yadis_ManagerLoader extends Auth_Yadis_SessionLoader {
  * a caller attempt to use each one.  This is used by the Yadis
  * library internally.
  *
- * @package OpenID
+ * @package Yadis
  */
-class Auth_Yadis_Manager {
+class Auth_Yadis_Manager
+{
 
     /**
      * Intialize a new yadis service manager.
      *
      * @access private
      */
-    function Auth_Yadis_Manager($starting_url, $yadis_url,
-                                    $services, $session_key)
+    function Auth_Yadis_Manager($starting_url, $yadis_url, $services, $session_key)
     {
         // The URL that was used to initiate the Yadis protocol
         $this->starting_url = $starting_url;
@@ -364,9 +368,10 @@ class Auth_Yadis_Manager {
  * session. Once a request completes, call .finish() to clean up the
  * session state.
  *
- * @package OpenID
+ * @package Yadis
  */
-class Auth_Yadis_Discovery {
+class Auth_Yadis_Discovery
+{
 
     /**
      * @access private
@@ -387,8 +392,7 @@ class Auth_Yadis_Discovery {
      * @param string $session_key_suffix The optional session key
      * suffix override.
      */
-    function Auth_Yadis_Discovery(&$session, $url,
-                                      $session_key_suffix = null)
+    function Auth_Yadis_Discovery(&$session, $url, $session_key_suffix = null)
     {
         /// Initialize a discovery object
         $this->session =& $session;
@@ -422,8 +426,7 @@ class Auth_Yadis_Discovery {
         if ($manager) {
             $loader = new Auth_Yadis_ManagerLoader();
             $service = $manager->nextService();
-            $this->session->set($this->session_key,
-                                serialize($loader->toSession($manager)));
+            $this->session->set($this->session_key, serialize($loader->toSession($manager)));
         } else {
             $service = null;
         }
@@ -494,10 +497,8 @@ class Auth_Yadis_Discovery {
 
         if ($services) {
             $loader = new Auth_Yadis_ManagerLoader();
-            $manager = new Auth_Yadis_Manager($this->url, $yadis_url,
-                                              $services, $key);
-            $this->session->set($this->session_key,
-                                serialize($loader->toSession($manager)));
+            $manager = new Auth_Yadis_Manager($this->url, $yadis_url, $services, $key);
+            $this->session->set($this->session_key, serialize($loader->toSession($manager)));
             return $manager;
         } else {
             // Oh, PHP.

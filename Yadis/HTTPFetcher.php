@@ -1,5 +1,4 @@
 <?php
-
 /**
  * This module contains the HTTP fetcher interface
  *
@@ -7,13 +6,14 @@
  *
  * LICENSE: See the COPYING file included in this distribution.
  *
- * @package OpenID
+ * @package Yadis
  * @author JanRain, Inc. <openid@janrain.com>
  * @copyright 2005 Janrain, Inc.
  * @license http://www.gnu.org/copyleft/lesser.html LGPL
  */
 
-class Auth_Yadis_HTTPResponse {
+class Auth_Yadis_HTTPResponse
+{
     function Auth_Yadis_HTTPResponse($final_url = null, $status = null,
                                          $headers = null, $body = null)
     {
@@ -30,7 +30,7 @@ class Auth_Yadis_HTTPResponse {
  * fetcher for some reason.
  *
  * @access private
- * @package OpenID
+ * @package Yadis
  */
 class Auth_Yadis_HTTPFetcher {
 
@@ -63,8 +63,8 @@ class Auth_Yadis_HTTPFetcher {
     function _findRedirect($headers)
     {
         foreach ($headers as $line) {
-            if (strpos($line, "Location: ") === 0) {
-                $parts = explode(" ", $line, 2);
+            if (strpos($line, 'Location: ') === 0) {
+                $parts = explode(' ', $line, 2);
                 return $parts[1];
             }
         }
@@ -85,7 +85,7 @@ class Auth_Yadis_HTTPFetcher {
      */
     function get($url, $headers)
     {
-        trigger_error("not implemented", E_USER_ERROR);
+        trigger_error('Feature not implemented', E_USER_ERROR);
     }
 }
 

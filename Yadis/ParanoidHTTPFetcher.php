@@ -16,7 +16,7 @@
 /**
  * Interface import
  */
-require_once "Auth/Yadis/HTTPFetcher.php";
+require_once(Yadis/HTTPFetcher.php);
 
 /**
  * A paranoid {@link Auth_Yadis_HTTPFetcher} class which uses CURL
