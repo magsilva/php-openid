@@ -7,7 +7,7 @@
  *
  * LICENSE: See the COPYING file included in this distribution.
  *
- * @package OpenID
+ * @package Yadis
  * @author JanRain, Inc. <openid@janrain.com>
  * @copyright 2005 Janrain, Inc.
  * @license http://www.gnu.org/copyleft/lesser.html LGPL
@@ -16,7 +16,7 @@
 /**
  * Require the XPath implementation.
  */
-require_once 'Auth/Yadis/XML.php';
+require_once('Yadis/XML.php');
 
 /**
  * This match mode means a given service must match ALL filters passed
@@ -78,9 +78,10 @@ function Auth_Yadis_array_scramble($arr)
  * element's contents.  See {@link Auth_Yadis_Yadis} for more
  * information on the role this class plays in Yadis discovery.
  *
- * @package OpenID
+ * @package Yadis
  */
-class Auth_Yadis_Service {
+class Auth_Yadis_Service
+{
 
     /**
      * Creates an empty service object.
@@ -217,9 +218,10 @@ class Auth_Yadis_Service {
  * returned.  This class is used by the Auth_Yadis_Yadis::discover
  * method.
  *
- * @package OpenID
+ * @package Yadis
  */
-class Auth_Yadis_XRDS {
+class Auth_Yadis_XRDS
+{
 
     /**
      * Instantiate a Auth_Yadis_XRDS object.  Requires an XPath
@@ -251,7 +253,7 @@ class Auth_Yadis_XRDS {
             return $_null;
         }
 
-        $parser = Auth_Yadis_getXMLParser();
+        $parser = Yadis_XMLParser_Factory::getXMLParser();
 
         $ns_map = Auth_Yadis_getNSMap();
 

@@ -1,5 +1,4 @@
 <?php
-
 /**
  * This is the HTML pseudo-parser for the Yadis library.
  *
@@ -7,7 +6,7 @@
  *
  * LICENSE: See the COPYING file included in this distribution.
  *
- * @package OpenID
+ * @package Yadis
  * @author JanRain, Inc. <openid@janrain.com>
  * @copyright 2005 Janrain, Inc.
  * @license http://www.gnu.org/copyleft/lesser.html LGPL
@@ -18,9 +17,10 @@
  * tags and their attributes.  This is used by the Yadis discovery
  * process.  This class must be instantiated to be used.
  *
- * @package OpenID
+ * @package Yadis
  */
-class Auth_Yadis_ParseHTML {
+class Auth_Yadis_ParseHTML
+{
 
     /**
      * @access private
@@ -45,13 +45,9 @@ class Auth_Yadis_ParseHTML {
 
     function Auth_Yadis_ParseHTML()
     {
-        $this->_attr_find = sprintf("/%s/%s",
-                                    $this->_attr_find,
-                                    $this->_re_flags);
+        $this->_attr_find = sprintf('/%s/%s', $this->_attr_find, $this->_re_flags);
 
-        $this->_removed_re = sprintf("/%s/%s",
-                                     $this->_removed_re,
-                                     $this->_re_flags);
+        $this->_removed_re = sprintf('/%s/%s', $this->_removed_re, $this->_re_flags);
 
         $this->_entity_replacements = array(
                                             'amp' => '&',
@@ -60,9 +56,7 @@ class Auth_Yadis_ParseHTML {
                                             'quot' => '"'
                                             );
 
-        $this->_ent_replace =
-            sprintf("&(%s);", implode("|",
-                                      $this->_entity_replacements));
+        $this->_ent_replace = sprintf('&(%s);', implode('|', $this->_entity_replacements));
     }
 
     /**
@@ -156,9 +150,7 @@ class Auth_Yadis_ParseHTML {
      */
     function getMetaTags($html_string)
     {
-        $html_string = preg_replace($this->_removed_re,
-                                    "",
-                                    $html_string);
+        $html_string = preg_replace($this->_removed_re, '', $html_string);
 
         $key_tags = array($this->tagPattern('html', false, false),
                           $this->tagPattern('head', false, false),
@@ -205,7 +197,7 @@ class Auth_Yadis_ParseHTML {
         $link_data = array();
         $link_matches = array();
         
-        if (!preg_match_all($this->tagPattern('meta', false, 'maybe'),
+        if (! preg_match_all($this->tagPattern('meta', false, 'maybe'),
                             $html_string, $link_matches)) {
             return array();
         }

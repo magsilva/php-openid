@@ -7,7 +7,7 @@
  *
  * LICENSE: See the COPYING file included in this distribution.
  *
- * @package OpenID
+ * @package Yadis
  * @author JanRain, Inc. <openid@janrain.com>
  * @copyright 2005 Janrain, Inc.
  * @license http://www.gnu.org/copyleft/lesser.html LGPL
@@ -16,15 +16,16 @@
 /**
  * Interface import
  */
-require_once(Yadis/HTTPFetcher.php);
+require_once('Yadis/HTTPFetcher.php');
 
 /**
  * A paranoid {@link Auth_Yadis_HTTPFetcher} class which uses CURL
  * for fetching.
  *
- * @package OpenID
+ * @package Yadis
  */
-class Auth_Yadis_ParanoidHTTPFetcher extends Auth_Yadis_HTTPFetcher {
+class Auth_Yadis_ParanoidHTTPFetcher extends Auth_Yadis_HTTPFetcher
+{
     function Auth_Yadis_ParanoidHTTPFetcher()
     {
         $this->reset();
@@ -70,15 +71,12 @@ class Auth_Yadis_ParanoidHTTPFetcher extends Auth_Yadis_HTTPFetcher {
             }
 
             if (!$this->allowedURL($url)) {
-                trigger_error(sprintf("Fetching URL not allowed: %s", $url),
-                              E_USER_WARNING);
+                trigger_error(sprintf('Fetching URL not allowed: %s', $url), E_USER_WARNING);
                 return null;
             }
 
-            curl_setopt($c, CURLOPT_WRITEFUNCTION,
-                        array(&$this, "_writeData"));
-            curl_setopt($c, CURLOPT_HEADERFUNCTION,
-                        array(&$this, "_writeHeader"));
+            curl_setopt($c, CURLOPT_WRITEFUNCTION, array(&$this, '_writeData'));
+            curl_setopt($c, CURLOPT_HEADERFUNCTION, array(&$this, '_writeHeader'));
 
             if ($extra_headers) {
                 curl_setopt($c, CURLOPT_HTTPHEADER, $extra_headers);
@@ -93,7 +91,7 @@ class Auth_Yadis_ParanoidHTTPFetcher extends Auth_Yadis_HTTPFetcher {
             $body = $this->data;
             $headers = $this->headers;
 
-            if (!$code) {
+            if (! $code) {
                 return null;
             }
 
@@ -107,21 +105,19 @@ class Auth_Yadis_ParanoidHTTPFetcher extends Auth_Yadis_HTTPFetcher {
                 $new_headers = array();
 
                 foreach ($headers as $header) {
-                    if (preg_match("/:/", $header)) {
-                        list($name, $value) = explode(": ", $header, 2);
+                    if (preg_match('/:/', $header)) {
+                        list($name, $value) = explode(': ', $header, 2);
                         $new_headers[$name] = $value;
                     }
                 }
 
-                return new Auth_Yadis_HTTPResponse($url, $code,
-                                                    $new_headers, $body);
+                return new Auth_Yadis_HTTPResponse($url, $code, $new_headers, $body);
             }
 
             $off = $stop - time();
         }
 
-        trigger_error(sprintf("Timed out fetching: %s", $url),
-                      E_USER_WARNING);
+        trigger_error(sprintf('Timed out fetching: %s', $url), E_USER_WARNING);
 
         return null;
     }
@@ -131,8 +127,7 @@ class Auth_Yadis_ParanoidHTTPFetcher extends Auth_Yadis_HTTPFetcher {
         $this->reset();
 
         if (!$this->allowedURL($url)) {
-            trigger_error(sprintf("Fetching URL not allowed: %s", $url),
-                          E_USER_WARNING);
+            trigger_error(sprintf('Fetching URL not allowed: %s', $url), E_USER_WARNING);
             return null;
         }
 
@@ -143,8 +138,7 @@ class Auth_Yadis_ParanoidHTTPFetcher extends Auth_Yadis_HTTPFetcher {
         curl_setopt($c, CURLOPT_POSTFIELDS, $body);
         curl_setopt($c, CURLOPT_TIMEOUT, $this->timeout);
         curl_setopt($c, CURLOPT_URL, $url);
-        curl_setopt($c, CURLOPT_WRITEFUNCTION,
-                    array(&$this, "_writeData"));
+        curl_setopt($c, CURLOPT_WRITEFUNCTION, array(&$this, '_writeData'));
 
         curl_exec($c);
 
@@ -166,15 +160,14 @@ class Auth_Yadis_ParanoidHTTPFetcher extends Auth_Yadis_HTTPFetcher {
         }
 
         foreach ($this->headers as $header) {
-            if (preg_match("/:/", $header)) {
-                list($name, $value) = explode(": ", $header, 2);
+            if (preg_match('/:/', $header)) {
+                list($name, $value) = explode(': ', $header, 2);
                 $new_headers[$name] = $value;
             }
 
         }
 
-        return new Auth_Yadis_HTTPResponse($url, $code,
-                                           $new_headers, $body);
+        return new Auth_Yadis_HTTPResponse($url, $code, $new_headers, $body);
     }
 }
 

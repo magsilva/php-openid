@@ -8,7 +8,7 @@
  *
  * LICENSE: See the COPYING file included in this distribution.
  *
- * @package OpenID
+ * @package Yadis
  * @author JanRain, Inc. <openid@janrain.com>
  * @copyright 2005 Janrain, Inc.
  * @license http://www.gnu.org/copyleft/lesser.html LGPL
@@ -17,20 +17,20 @@
 /**
  * Interface import
  */
-require_once "Auth/Yadis/HTTPFetcher.php";
+require_once('Yadis/HTTPFetcher.php');
 
 /**
  * This class implements a plain, hand-built socket-based fetcher
  * which will be used in the event that CURL is unavailable.
  *
- * @package OpenID
+ * @package Yadis
  */
-class Auth_Yadis_PlainHTTPFetcher extends Auth_Yadis_HTTPFetcher {
+class Auth_Yadis_PlainHTTPFetcher extends Auth_Yadis_HTTPFetcher
+{
     function get($url, $extra_headers = null)
     {
         if (!$this->allowedURL($url)) {
-            trigger_error("Bad URL scheme in url: " . $url,
-                          E_USER_WARNING);
+            trigger_error('Bad URL scheme in url: ' . $url, E_USER_WARNING);
             return null;
         }
 
@@ -53,9 +53,8 @@ class Auth_Yadis_PlainHTTPFetcher extends Auth_Yadis_HTTPFetcher {
                 } elseif ($parts['scheme'] == 'https') {
                     $parts['port'] = 443;
                 } else {
-                    trigger_error("fetcher post method doesn't support " .
-                                  " scheme '" . $parts['scheme'] .
-                                  "', no default port available",
+                    trigger_error('Fetcher post method doesn\'t support scheme "'
+                    			  . $parts['scheme'] . '", no default port available',
                                   E_USER_WARNING);
                     return null;
                 }
@@ -67,17 +66,14 @@ class Auth_Yadis_PlainHTTPFetcher extends Auth_Yadis_HTTPFetcher {
                 $host = 'ssl://' . $host;
             }
 
-            $user_agent = "PHP Yadis Library Fetcher";
+            $user_agent = 'PHP Yadis Library Fetcher';
 
             $headers = array(
-                             "GET ".$parts['path'].
-                             (array_key_exists('query', $parts) ?
-                              "?".$parts['query'] : "").
-                                 " HTTP/1.0",
-                             "User-Agent: $user_agent",
-                             "Host: ".$parts['host'].
-                                ($specify_port ? ":".$parts['port'] : ""),
-                             "Port: ".$parts['port']);
+                             'GET ' . $parts['path'] . (array_key_exists('query', $parts) ? '?' . $parts['query'] : '') . ' HTTP/1.0',
+                             'User-Agent: ' . $user_agent,
+                             'Host: ' . $parts['host'] . ($specify_port ? ':' . $parts['port'] : ''),
+                             'Port: ' . $parts['port']
+                       );
 
             $errno = 0;
             $errstr = '';
@@ -88,8 +84,7 @@ class Auth_Yadis_PlainHTTPFetcher extends Auth_Yadis_HTTPFetcher {
                 }
             }
 
-            @$sock = fsockopen($host, $parts['port'], $errno, $errstr,
-                               $this->timeout);
+            @$sock = fsockopen($host, $parts['port'], $errno, $errstr, $this->timeout);
             if ($sock === false) {
                 return false;
             }
@@ -109,7 +104,7 @@ class Auth_Yadis_PlainHTTPFetcher extends Auth_Yadis_HTTPFetcher {
             list($headers, $body) = explode("\r\n\r\n", $data, 2);
             $headers = explode("\r\n", $headers);
 
-            $http_code = explode(" ", $headers[0]);
+            $http_code = explode(' ', $headers[0]);
             $code = $http_code[1];
 
             if (in_array($code, array('301', '302'))) {
@@ -138,8 +133,7 @@ class Auth_Yadis_PlainHTTPFetcher extends Auth_Yadis_HTTPFetcher {
     function post($url, $body, $extra_headers = null)
     {
         if (!$this->allowedURL($url)) {
-            trigger_error("Bad URL scheme in url: " . $url,
-                          E_USER_WARNING);
+            trigger_error('Bad URL scheme in url: ' . $url, E_USER_WARNING);
             return null;
         }
 
@@ -152,13 +146,12 @@ class Auth_Yadis_PlainHTTPFetcher extends Auth_Yadis_HTTPFetcher {
             $post_path .= '?' . $parts['query'];
         }
 
-        $headers[] = "POST ".$post_path." HTTP/1.0";
-        $headers[] = "Host: " . $parts['host'];
-        $headers[] = "Content-type: application/x-www-form-urlencoded";
-        $headers[] = "Content-length: " . strval(strlen($body));
+        $headers[] = 'POST ' . $post_path . ' HTTP/1.0';
+        $headers[] = 'Host: ' . $parts['host'];
+        $headers[] = 'Content-type: application/x-www-form-urlencoded';
+        $headers[] = 'Content-length: ' . strval(strlen($body));
 
-        if ($extra_headers &&
-            is_array($extra_headers)) {
+        if ($extra_headers && is_array($extra_headers)) {
             $headers = array_merge($headers, $extra_headers);
         }
 
@@ -175,28 +168,26 @@ class Auth_Yadis_PlainHTTPFetcher extends Auth_Yadis_HTTPFetcher {
             } elseif ($parts['scheme'] == 'https') {
                 $parts['port'] = 443;
             } else {
-                trigger_error("fetcher post method doesn't support scheme '" .
+                trigger_error('Fetcher post method doesn\'t support scheme "' .
                               $parts['scheme'] .
-                              "', no default port available",
+                              '", no default port available',
                               E_USER_WARNING);
                 return null;
             }
         }
 
         if ($parts['scheme'] == 'https') {
-            $parts['host'] = sprintf("ssl://%s", $parts['host']);
+            $parts['host'] = sprintf('ssl://%s', $parts['host']);
         }
 
         // Connect to the remote server.
         $errno = 0;
         $errstr = '';
 
-        $sock = fsockopen($parts['host'], $parts['port'], $errno, $errstr,
-                          $this->timeout);
+        $sock = fsockopen($parts['host'], $parts['port'], $errno, $errstr, $this->timeout);
 
         if ($sock === false) {
-            trigger_error("Could not connect to " . $parts['host'] .
-                          " port " . $parts['port'],
+            trigger_error('Could not connect to ' . $parts['host'] . ' port ' . $parts['port'],
                           E_USER_WARNING);
             return null;
         }
@@ -224,21 +215,20 @@ class Auth_Yadis_PlainHTTPFetcher extends Auth_Yadis_HTTPFetcher {
         // Expect the first line of the headers data to be something
         // like HTTP/1.1 200 OK.  Split the line on spaces and take
         // the second token, which should be the return code.
-        $http_code = explode(" ", $headers[0]);
+        $http_code = explode(' ', $headers[0]);
         $code = $http_code[1];
 
         $new_headers = array();
 
         foreach ($headers as $header) {
-            if (preg_match("/:/", $header)) {
-                list($name, $value) = explode(": ", $header, 2);
+            if (preg_match('/:/', $header)) {
+                list($name, $value) = explode(': ', $header, 2);
                 $new_headers[$name] = $value;
             }
 
         }
 
-        return new Auth_Yadis_HTTPResponse($url, $code,
-                                           $new_headers, $response_body);
+        return new Auth_Yadis_HTTPResponse($url, $code, $new_headers, $response_body);
     }
 }
 
