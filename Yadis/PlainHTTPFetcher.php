@@ -18,6 +18,7 @@
  * Interface import
  */
 require_once('Yadis/HTTPFetcher.php');
+require_once('HTTP/HTTP.php');
 
 /**
  * This class implements a plain, hand-built socket-based fetcher
@@ -25,7 +26,7 @@ require_once('Yadis/HTTPFetcher.php');
  *
  * @package Yadis
  */
-class Auth_Yadis_PlainHTTPFetcher extends Auth_Yadis_HTTPFetcher
+class Yadis_PlainHTTPFetcher extends Yadis_HTTPFetcher
 {
     function get($url, $extra_headers = null)
     {
@@ -108,7 +109,7 @@ class Auth_Yadis_PlainHTTPFetcher extends Auth_Yadis_HTTPFetcher
             $code = $http_code[1];
 
             if (in_array($code, array('301', '302'))) {
-                $url = $this->_findRedirect($headers);
+                $url = HTTP::findRedirect($headers);
                 $redir = true;
             } else {
                 $redir = false;
@@ -127,7 +128,7 @@ class Auth_Yadis_PlainHTTPFetcher extends Auth_Yadis_HTTPFetcher
 
         }
 
-        return new Auth_Yadis_HTTPResponse($url, $code, $new_headers, $body);
+        return new Yadis_HTTPResponse($url, $code, $new_headers, $body);
     }
 
     function post($url, $body, $extra_headers = null)
@@ -228,7 +229,7 @@ class Auth_Yadis_PlainHTTPFetcher extends Auth_Yadis_HTTPFetcher
 
         }
 
-        return new Auth_Yadis_HTTPResponse($url, $code, $new_headers, $response_body);
+        return new Yadis_HTTPResponse($url, $code, $new_headers, $response_body);
     }
 }
 

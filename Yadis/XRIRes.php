@@ -2,29 +2,34 @@
 
 /**
  * Code for using a proxy XRI resolver.
+ *
+ * @package Yadis
+ * @author JanRain, Inc. <openid@janrain.com>
+ * @copyright 2005 Janrain, Inc.
+ * @license http://www.gnu.org/copyleft/lesser.html LGPL
  */
+ 
+require_once('Yadis/XRDS.php');
+require_once('Yadis/XRI.php');
 
-require_once 'Auth/Yadis/XRDS.php';
-require_once 'Auth/Yadis/XRI.php';
 
-class Auth_Yadis_ProxyResolver {
-    function Auth_Yadis_ProxyResolver(&$fetcher, $proxy_url = null)
+class Yadis_ProxyResolver
+{
+    function Yadis_ProxyResolver(&$fetcher, $proxy_url = null)
     {
         $this->fetcher =& $fetcher;
         $this->proxy_url = $proxy_url;
         if (!$this->proxy_url) {
-            $this->proxy_url = Auth_Yadis_getDefaultProxy();
+            $this->proxy_url = Yadis_getDefaultProxy();
         }
     }
 
     function queryURL($xri, $service_type = null)
     {
         // trim off the xri:// prefix
-        $qxri = substr(Auth_Yadis_toURINormal($xri), 6);
+        $qxri = substr(Yadis_toURINormal($xri), 6);
         $hxri = $this->proxy_url . $qxri;
-        $args = array(
-                      '_xrd_r' => 'application/xrds+xml'
-                      );
+        $args = array('_xrd_r' => 'application/xrds+xml');
 
         if ($service_type) {
             $args['_xrd_t'] = $service_type;
@@ -33,7 +38,7 @@ class Auth_Yadis_ProxyResolver {
             $args['_xrd_r'] .= ';sep=false';
         }
 
-        $query = Auth_Yadis_XRIAppendArgs($hxri, $args);
+        $query = Yadis_XRIAppendArgs($hxri, $args);
         return $query;
     }
 
@@ -47,12 +52,11 @@ class Auth_Yadis_ProxyResolver {
             if ($response->status != 200) {
                 continue;
             }
-            $xrds = Auth_Yadis_XRDS::parseXRDS($response->body);
+            $xrds = Yadis_XRDS::parseXRDS($response->body);
             if (!$xrds) {
                 continue;
             }
-            $canonicalID = Auth_Yadis_getCanonicalID($xri,
-                                                         $xrds);
+            $canonicalID = Yadis_getCanonicalID($xri, $xrds);
 
             if ($canonicalID === false) {
                 return null;

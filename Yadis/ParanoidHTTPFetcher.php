@@ -16,17 +16,17 @@
 /**
  * Interface import
  */
+require_once('HTTP/HTTP.php');
 require_once('Yadis/HTTPFetcher.php');
 
 /**
- * A paranoid {@link Auth_Yadis_HTTPFetcher} class which uses CURL
- * for fetching.
+ * A paranoid {@link Yadis_HTTPFetcher} class which uses CURL for fetching.
  *
  * @package Yadis
  */
-class Auth_Yadis_ParanoidHTTPFetcher extends Auth_Yadis_HTTPFetcher
+class Yadis_ParanoidHTTPFetcher extends Yadis_HTTPFetcher
 {
-    function Auth_Yadis_ParanoidHTTPFetcher()
+    function Yadis_ParanoidHTTPFetcher()
     {
         $this->reset();
     }
@@ -96,7 +96,7 @@ class Auth_Yadis_ParanoidHTTPFetcher extends Auth_Yadis_HTTPFetcher
             }
 
             if (in_array($code, array(301, 302, 303, 307))) {
-                $url = $this->_findRedirect($headers);
+                $url = HTTP::findRedirect($headers);
                 $redir = true;
             } else {
                 $redir = false;
@@ -111,7 +111,7 @@ class Auth_Yadis_ParanoidHTTPFetcher extends Auth_Yadis_HTTPFetcher
                     }
                 }
 
-                return new Auth_Yadis_HTTPResponse($url, $code, $new_headers, $body);
+                return new Yadis_HTTPResponse($url, $code, $new_headers, $body);
             }
 
             $off = $stop - time();
@@ -167,7 +167,7 @@ class Auth_Yadis_ParanoidHTTPFetcher extends Auth_Yadis_HTTPFetcher
 
         }
 
-        return new Auth_Yadis_HTTPResponse($url, $code, $new_headers, $body);
+        return new Yadis_HTTPResponse($url, $code, $new_headers, $body);
     }
 }
 

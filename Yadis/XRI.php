@@ -11,53 +11,52 @@
 
 require_once('Yadis/Misc.php');
 require_once('Yadis/Yadis.php');
-require_once('OpenID/OpenID.php');
+require_once('HTTP/HTTP.php');
 
 
-function Auth_Yadis_getDefaultProxy()
+function Yadis_getDefaultProxy()
 {
     return 'http://proxy.xri.net/';
 }
 
-function Auth_Yadis_getXRIAuthorities()
+function Yadis_getXRIAuthorities()
 {
     return array('!', '=', '@', '+', '$', '(');
 }
 
-function Auth_Yadis_getEscapeRE()
+function Yadis_getEscapeRE()
 {
     $parts = array();
-    foreach (array_merge(Auth_Yadis_getUCSChars(),
-                         Auth_Yadis_getIPrivateChars()) as $pair) {
+    foreach (array_merge(Yadis_getUCSChars(), Yadis_getIPrivateChars()) as $pair) {
         list($m, $n) = $pair;
-        $parts[] = sprintf("%s-%s", chr($m), chr($n));
+        $parts[] = sprintf('%s-%s', chr($m), chr($n));
     }
 
     return sprintf('/[%s]/', implode('', $parts));
 }
 
-function Auth_Yadis_getXrefRE()
+function Yadis_getXrefRE()
 {
     return '/\((.*?)\)/';
 }
 
-function Auth_Yadis_identifierScheme($identifier)
+function Yadis_identifierScheme($identifier)
 {
-    if (Auth_Yadis_startswith($identifier, 'xri://') ||
-        (in_array($identifier[0], Auth_Yadis_getXRIAuthorities()))) {
+    if (Yadis_startswith($identifier, 'xri://') ||
+        (in_array($identifier[0], Yadis_getXRIAuthorities()))) {
         return "XRI";
     } else {
         return "URI";
     }
 }
 
-function Auth_Yadis_toIRINormal($xri)
+function Yadis_toIRINormal($xri)
 {
-    if (!Auth_Yadis_startswith($xri, 'xri://')) {
+    if (! Yadis_startswith($xri, 'xri://')) {
         $xri = 'xri://' . $xri;
     }
 
-    return Auth_Yadis_escapeForIRI($xri);
+    return Yadis_escapeForIRI($xri);
 }
 
 function _escape_xref($xref_match)
@@ -69,32 +68,30 @@ function _escape_xref($xref_match)
     return $xref;
 }
 
-function Auth_Yadis_escapeForIRI($xri)
+function Yadis_escapeForIRI($xri)
 {
     $xri = str_replace('%', '%25', $xri);
-    $xri = preg_replace_callback(Auth_Yadis_getXrefRE(),
-                                 '_escape_xref', $xri);
+    $xri = preg_replace_callback(Yadis_getXrefRE(), '_escape_xref', $xri);
     return $xri;
 }
 
-function Auth_Yadis_toURINormal($xri)
+function Yadis_toURINormal($xri)
 {
-    return Auth_Yadis_iriToURI(Auth_Yadis_toIRINormal($xri));
+    return Yadis_iriToURI(Yadis_toIRINormal($xri));
 }
 
-function Auth_Yadis_iriToURI($iri)
+function Yadis_iriToURI($iri)
 {
     if (1) {
         return $iri;
     } else {
         // According to RFC 3987, section 3.1, "Mapping of IRIs to URIs"
-        return preg_replace_callback(Auth_Yadis_getEscapeRE(),
-                                     'Auth_Yadis_pct_escape_unicode', $iri);
+        return preg_replace_callback(Yadis_getEscapeRE(), 'Yadis_pct_escape_unicode', $iri);
     }
 }
 
 
-function Auth_Yadis_XRIAppendArgs($url, $args)
+function Yadis_XRIAppendArgs($url, $args)
 {
     // Append some arguments to an HTTP query.  Yes, this is just like
     // OpenID's appendArgs, but with special seasoning for XRI
@@ -131,23 +128,23 @@ function Auth_Yadis_XRIAppendArgs($url, $args)
         $sep = '?';
     }
 
-    return $url . $sep . Auth_OpenID::httpBuildQuery($args);
+    return $url . $sep . HTTP::buildQuery($args);
 }
 
-function Auth_Yadis_providerIsAuthoritative($providerID, $canonicalID)
+function Yadis_providerIsAuthoritative($providerID, $canonicalID)
 {
     $lastbang = strrpos($canonicalID, '!');
     $p = substr($canonicalID, 0, $lastbang);
     return $p == $providerID;
 }
 
-function Auth_Yadis_rootAuthority($xri)
+function Yadis_rootAuthority($xri)
 {
     // Return the root authority for an XRI.
 
     $root = null;
 
-    if (Auth_Yadis_startswith($xri, 'xri://')) {
+    if (Yadis_startswith($xri, 'xri://')) {
         $xri = substr($xri, 6);
     }
 
@@ -160,7 +157,7 @@ function Auth_Yadis_rootAuthority($xri)
         //   does that before we have a real xriparse function.
         //   Hopefully nobody does that *ever*.
         $root = substr($authority, 0, strpos($authority, ')') + 1);
-    } else if (in_array($authority[0], Auth_Yadis_getXRIAuthorities())) {
+    } else if (in_array($authority[0], Yadis_getXRIAuthorities())) {
         // Other XRI reference.
         $root = $authority[0];
     } else {
@@ -173,18 +170,18 @@ function Auth_Yadis_rootAuthority($xri)
         $root = $segments[0];
     }
 
-    return Auth_Yadis_XRI($root);
+    return Yadis_XRI($root);
 }
 
-function Auth_Yadis_XRI($xri)
+function Yadis_XRI($xri)
 {
-    if (!Auth_Yadis_startswith($xri, 'xri://')) {
+    if (! Yadis_startswith($xri, 'xri://')) {
         $xri = 'xri://' . $xri;
     }
     return $xri;
 }
 
-function Auth_Yadis_getCanonicalID($iname, $xrds)
+function Yadis_getCanonicalID($iname, $xrds)
 {
     // Returns false or a canonical ID value.
 
@@ -200,7 +197,7 @@ function Auth_Yadis_getCanonicalID($iname, $xrds)
     }
 
     $canonicalID = $canonicalID_nodes[count($canonicalID_nodes) - 1];
-    $canonicalID = Auth_Yadis_XRI($parser->content($canonicalID));
+    $canonicalID = Yadis_XRI($parser->content($canonicalID));
 
     $childID = $canonicalID;
 
@@ -211,7 +208,7 @@ function Auth_Yadis_getCanonicalID($iname, $xrds)
         $parent_list = array();
 
         foreach ($parser->evalXPath('xrd:CanonicalID', $xrd) as $c) {
-            $parent_list[] = Auth_Yadis_XRI($parser->content($c));
+            $parent_list[] = Yadis_XRI($parser->content($c));
         }
 
         if (!in_array($parent_sought, $parent_list)) {
@@ -222,8 +219,8 @@ function Auth_Yadis_getCanonicalID($iname, $xrds)
         $childID = $parent_sought;
     }
 
-    $root = Auth_Yadis_rootAuthority($iname);
-    if (!Auth_Yadis_providerIsAuthoritative($root, $childID)) {
+    $root = Yadis_rootAuthority($iname);
+    if (! Yadis_providerIsAuthoritative($root, $childID)) {
         // raise XRDSFraud.
         return false;
     }

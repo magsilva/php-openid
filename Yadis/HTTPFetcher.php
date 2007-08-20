@@ -12,10 +12,9 @@
  * @license http://www.gnu.org/copyleft/lesser.html LGPL
  */
 
-class Auth_Yadis_HTTPResponse
+class Yadis_HTTPResponse
 {
-    function Auth_Yadis_HTTPResponse($final_url = null, $status = null,
-                                         $headers = null, $body = null)
+    function Yadis_HTTPResponse($final_url = null, $status = null, $headers = null, $body = null)
     {
         $this->final_url = $final_url;
         $this->status = $status;
@@ -32,9 +31,10 @@ class Auth_Yadis_HTTPResponse
  * @access private
  * @package Yadis
  */
-class Auth_Yadis_HTTPFetcher {
-
-    var $timeout = 20; // timeout in seconds.
+class Yadis_HTTPFetcher
+{
+	// Timeout in seconds.
+    var $timeout = 20;
 
     /**
      * Return whether a URL should be allowed. Override this method to
@@ -55,20 +55,6 @@ class Auth_Yadis_HTTPFetcher {
     function URLHasAllowedScheme($url)
     {
         return (bool)preg_match('/^https?:\/\//i', $url);
-    }
-
-    /**
-     * @access private
-     */
-    function _findRedirect($headers)
-    {
-        foreach ($headers as $line) {
-            if (strpos($line, 'Location: ') === 0) {
-                $parts = explode(' ', $line, 2);
-                return $parts[1];
-            }
-        }
-        return null;
     }
 
     /**

@@ -8,13 +8,13 @@
  */
 
 /**
- * The base session class used by the Auth_Yadis_Manager.  This
- * class wraps the default PHP session machinery and should be
- * subclassed if your application doesn't use PHP sessioning.
+ * The base session class used by the Yadis_Manager.  This class wraps the
+ * default PHP session machinery and should be subclassed if your application
+ * doesn't use PHP sessioning.
  *
  * @package Yadis
  */
-class Auth_Yadis_PHPSession
+class Yadis_PHPSession
 {
     /**
      * Set a session key/value pair.
@@ -74,7 +74,7 @@ class Auth_Yadis_PHPSession
  *
  * @package Yadis
  */
-class Auth_Yadis_SessionLoader
+class Yadis_SessionLoader
 {
     /**
      * Override this.
@@ -191,20 +191,20 @@ class Auth_Yadis_SessionLoader
 }
 
 /**
- * A concrete loader implementation for Auth_OpenID_ServiceEndpoints.
+ * A concrete loader implementation for OpenID_ServiceEndpoints.
  *
  * @package Yadis
  */
-class Auth_OpenID_ServiceEndpointLoader extends Auth_Yadis_SessionLoader
+class OpenID_ServiceEndpointLoader extends Yadis_SessionLoader
 {
     function newObject($data)
     {
-        return new Auth_OpenID_ServiceEndpoint();
+        return new OpenID_ServiceEndpoint();
     }
 
     function requiredKeys()
     {
-        $obj = new Auth_OpenID_ServiceEndpoint();
+        $obj = new OpenID_ServiceEndpoint();
         $data = array();
         foreach ($obj as $k => $v) {
             $data[] = $k;
@@ -219,11 +219,11 @@ class Auth_OpenID_ServiceEndpointLoader extends Auth_Yadis_SessionLoader
 }
 
 /**
- * A concrete loader implementation for Auth_Yadis_Managers.
+ * A concrete loader implementation for Yadis_Managers.
  *
  * @package Yadis
  */
-class Auth_Yadis_ManagerLoader extends Auth_Yadis_SessionLoader
+class Yadis_ManagerLoader extends Yadis_SessionLoader
 {
     function requiredKeys()
     {
@@ -237,7 +237,7 @@ class Auth_Yadis_ManagerLoader extends Auth_Yadis_SessionLoader
 
     function newObject($data)
     {
-        return new Auth_Yadis_Manager($data['starting_url'],
+        return new Yadis_Manager($data['starting_url'],
                                           $data['yadis_url'],
                                           $data['services'],
                                           $data['session_key']);
@@ -250,7 +250,7 @@ class Auth_Yadis_ManagerLoader extends Auth_Yadis_SessionLoader
 
     function prepareForLoad($data)
     {
-        $loader = new Auth_OpenID_ServiceEndpointLoader();
+        $loader = new OpenID_ServiceEndpointLoader();
         $services = array();
         foreach ($data['services'] as $s) {
             $services[] = $loader->fromSession($s);
@@ -260,7 +260,7 @@ class Auth_Yadis_ManagerLoader extends Auth_Yadis_SessionLoader
 
     function prepareForSave($obj)
     {
-        $loader = new Auth_OpenID_ServiceEndpointLoader();
+        $loader = new OpenID_ServiceEndpointLoader();
         $services = array();
         foreach ($obj->services as $s) {
             $services[] = $loader->toSession($s);
@@ -277,7 +277,7 @@ class Auth_Yadis_ManagerLoader extends Auth_Yadis_SessionLoader
  *
  * @package Yadis
  */
-class Auth_Yadis_Manager
+class Yadis_Manager
 {
 
     /**
@@ -285,7 +285,7 @@ class Auth_Yadis_Manager
      *
      * @access private
      */
-    function Auth_Yadis_Manager($starting_url, $yadis_url, $services, $session_key)
+    function Yadis_Manager($starting_url, $yadis_url, $services, $session_key)
     {
         // The URL that was used to initiate the Yadis protocol
         $this->starting_url = $starting_url;
@@ -370,7 +370,7 @@ class Auth_Yadis_Manager
  *
  * @package Yadis
  */
-class Auth_Yadis_Discovery
+class Yadis_Discovery
 {
 
     /**
@@ -386,13 +386,13 @@ class Auth_Yadis_Discovery
     /**
      * Initialize a discovery object.
      *
-     * @param Auth_Yadis_PHPSession $session An object which
-     * implements the Auth_Yadis_PHPSession API.
+     * @param Yadis_PHPSession $session An object which implements the
+     * Yadis_PHPSession API.
      * @param string $url The URL on which to attempt discovery.
      * @param string $session_key_suffix The optional session key
      * suffix override.
      */
-    function Auth_Yadis_Discovery(&$session, $url, $session_key_suffix = null)
+    function Yadis_Discovery(&$session, $url, $session_key_suffix = null)
     {
         /// Initialize a discovery object
         $this->session =& $session;
@@ -424,7 +424,7 @@ class Auth_Yadis_Discovery
         }
 
         if ($manager) {
-            $loader = new Auth_Yadis_ManagerLoader();
+            $loader = new Yadis_ManagerLoader();
             $service = $manager->nextService();
             $this->session->set($this->session_key, serialize($loader->toSession($manager)));
         } else {
@@ -473,7 +473,7 @@ class Auth_Yadis_Discovery
         $manager = null;
 
         if ($manager_str !== null) {
-            $loader = new Auth_Yadis_ManagerLoader();
+            $loader = new Yadis_ManagerLoader();
             $manager = $loader->fromSession(unserialize($manager_str));
         }
 
@@ -496,8 +496,8 @@ class Auth_Yadis_Discovery
         }
 
         if ($services) {
-            $loader = new Auth_Yadis_ManagerLoader();
-            $manager = new Auth_Yadis_Manager($this->url, $yadis_url, $services, $key);
+            $loader = new Yadis_ManagerLoader();
+            $manager = new Yadis_Manager($this->url, $yadis_url, $services, $key);
             $this->session->set($this->session_key, serialize($loader->toSession($manager)));
             return $manager;
         } else {

@@ -19,7 +19,7 @@
  *
  * @package Yadis
  */
-class Auth_Yadis_ParseHTML
+class Yadis_ParseHTML
 {
 
     /**
@@ -43,7 +43,7 @@ class Auth_Yadis_ParseHTML
      */
     var $_attr_find = '\b([-\w]+)=(".*?"|\'.*?\'|.+?)[\s>]';
 
-    function Auth_Yadis_ParseHTML()
+    function Yadis_ParseHTML()
     {
         $this->_attr_find = sprintf('/%s/%s', $this->_attr_find, $this->_re_flags);
 

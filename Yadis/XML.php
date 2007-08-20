@@ -11,19 +11,17 @@
  * The base class for wrappers for available PHP XML-parsing
  * extensions.  To work with this Yadis library, subclasses of this
  * class MUST implement the API as defined in the remarks for this
- * class.  Subclasses of Auth_Yadis_XMLParser are used to wrap
- * particular PHP XML extensions such as 'domxml'.  These are used
- * internally by the library depending on the availability of
- * supported PHP XML extensions.
+ * class.  Subclasses of Yadis_XMLParser are used to wrap particular PHP XML
+ * extensions such as 'domxml'.  These are used internally by the library
+ * depending on the availability of supported PHP XML extensions.
  *
  * @package Yadis
  */
-class Auth_Yadis_XMLParser
+class Yadis_XMLParser
 {
     /**
-     * Initialize an instance of Auth_Yadis_XMLParser with some
-     * XML and namespaces.  This SHOULD NOT be overridden by
-     * subclasses.
+     * Initialize an instance of Yadis_XMLParser with some XML and namespaces.
+     * This SHOULD NOT be overridden by subclasses.
      *
      * @param string $xml_string A string of XML to be parsed.
      * @param array $namespace_map An array of ($ns_name => $ns_uri)
@@ -126,17 +124,16 @@ class Auth_Yadis_XMLParser
 }
 
 /**
- * This concrete implementation of Auth_Yadis_XMLParser implements
- * the appropriate API for the 'domxml' extension which is typically
- * packaged with PHP 4.  This class will be used whenever the 'domxml'
- * extension is detected.  See the Auth_Yadis_XMLParser class for
- * details on this class's methods.
+ * This concrete implementation of Yadis_XMLParser implements the appropriate
+ * API for the 'domxml' extension which is typically packaged with PHP 4. This
+ * class will be used whenever the 'domxml' extension is detected.  See the
+ * Yadis_XMLParser class for details on this class's methods.
  *
  * @package Yadis
  */
-class Auth_Yadis_domxml extends Auth_Yadis_XMLParser
+class Yadis_domxml extends Yadis_XMLParser
 {
-    function Auth_Yadis_domxml()
+    function Yadis_domxml()
     {
         $this->xml = null;
         $this->doc = null;
@@ -209,17 +206,16 @@ class Auth_Yadis_domxml extends Auth_Yadis_XMLParser
 }
 
 /**
- * This concrete implementation of Auth_Yadis_XMLParser implements
- * the appropriate API for the 'dom' extension which is typically
- * packaged with PHP 5.  This class will be used whenever the 'dom'
- * extension is detected.  See the Auth_Yadis_XMLParser class for
- * details on this class's methods.
+ * This concrete implementation of Yadis_XMLParser implements the appropriate
+ * API for the 'dom' extension which is typically packaged with PHP 5.  This
+ * class will be used whenever the 'dom' extension is detected.  See the
+ * Yadis_XMLParser class for details on this class's methods.
  *
  * @package Yadis
  */
-class Auth_Yadis_dom extends Auth_Yadis_XMLParser
+class Yadis_dom extends Yadis_XMLParser
 {
-    function Auth_Yadis_dom()
+    function Yadis_dom()
     {
         $this->xml = null;
         $this->doc = null;
@@ -306,7 +302,7 @@ class Auth_Yadis_dom extends Auth_Yadis_XMLParser
  */
 class Yadis_XMLParser_Factory
 {
-	static $__Auth_Yadis_defaultParser = null;
+	static $__Yadis_defaultParser = null;
 
 	/**
 	 * Set a default parser to override the extension-driven selection of
@@ -314,42 +310,42 @@ class Yadis_XMLParser_Factory
 	 * one in which multiple parsers can be used but one is more
 	 * desirable.
 	 *
-	 * @param Auth_Yadis_XMLParser $parser An instance of a
-	 * Auth_Yadis_XMLParser subclass.
+	 * @param Yadis_XMLParser $parser An instance of a Yadis_XMLParser
+	 * subclass.
 	 */
 	function setDefaultParser(&$parser)
 	{
-	    Yadis_XMLParser_Factory::__Auth_Yadis_defaultParser =& $parser;
+	    Yadis_XMLParser_Factory::__Yadis_defaultParser =& $parser;
 	}
 
 	function getSupportedExtensions()
 	{
 	    return array(
 			'dom' => array(
-				'classname' => 'Auth_Yadis_dom',
+				'classname' => 'Yadis_dom',
 				'libname' => array('dom.so', 'dom.dll')),
 			'domxml' => array(
-				'classname' => 'Auth_Yadis_domxml',
+				'classname' => 'Yadis_domxml',
 				'libname' => array('domxml.so', 'php_domxml.dll')),
 			);
 	}
 
 	/**
-	 * Returns an instance of a Auth_Yadis_XMLParser subclass based on
-	 * the availability of PHP extensions for XML parsing.  If
-	 * Auth_Yadis_setDefaultParser has been called, the parser used in
-	 * that call will be returned instead.
+	 * Returns an instance of a Yadis_XMLParser subclass based on the
+	 * availability of PHP extensions for XML parsing.  If
+	 * Yadis_setDefaultParser has been called, the parser used in that call
+	 * will be returned instead.
 	 */
 	function &getXMLParser()
 	{
-	    if (isset(Yadis_XMLParser_Factory::__Auth_Yadis_defaultParser)) {
-	        return Yadis_XMLParser_Factory::__Auth_Yadis_defaultParser;
+	    if (isset(Yadis_XMLParser_Factory::__Yadis_defaultParser)) {
+	        return Yadis_XMLParser_Factory::__Yadis_defaultParser;
 	    }
 	
 	    $p = null;
 	    $classname = null;
 	
-	    $extensions = Yadis_XMLParser_Factory::getSupportedExtensions();
+	    $extensions = XMLParser_Factory::getSupportedExtensions();
 	
 	    // Return a wrapper for the resident implementation, if any.
 	    foreach ($extensions as $name => $params) {
@@ -371,7 +367,7 @@ class Yadis_XMLParser_Factory
 	    if (! isset($p)) {
 	        trigger_error('No XML parser was found', E_USER_ERROR);
 	    } else {
-	        Yadis_XMLParser_Factory::setDefaultParser($p);
+	        XMLParser_Factory::setDefaultParser($p);
 	    }
 	
 	    return $p;
