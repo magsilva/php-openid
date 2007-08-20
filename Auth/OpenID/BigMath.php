@@ -18,19 +18,20 @@
 /**
  * Needed for random number generation
  */
-require_once 'Auth/OpenID/CryptUtil.php';
+require_once('Auth/OpenID/CryptUtil.php');
 
 /**
  * Need Auth_OpenID::bytes().
  */
-require_once 'Auth/OpenID.php';
+require_once('Auth/OpenID.php');
 
 /**
  * The superclass of all big-integer math implementations
  * @access private
  * @package OpenID
  */
-class Auth_OpenID_MathLibrary {
+class Auth_OpenID_MathLibrary
+{
     /**
      * Given a long integer, returns the number converted to a binary
      * string.  This function accepts long integer values of arbitrary
@@ -46,7 +47,7 @@ class Auth_OpenID_MathLibrary {
     {
         $cmp = $this->cmp($long, 0);
         if ($cmp < 0) {
-            $msg = __FUNCTION__ . " takes only positive integers.";
+            $msg = __FUNCTION__ . ' takes only positive integers.';
             trigger_error($msg, E_USER_ERROR);
             return null;
         }
@@ -96,8 +97,7 @@ class Auth_OpenID_MathLibrary {
         $n = $this->init(0);
 
         if ($bytes && ($bytes[0] > 127)) {
-            trigger_error("bytesToNum works only for positive integers.",
-                          E_USER_WARNING);
+            trigger_error('bytesToNum works only for positive integers.', E_USER_WARNING);
             return null;
         }
 
@@ -187,7 +187,8 @@ class Auth_OpenID_MathLibrary {
  * @access private
  * @package OpenID
  */
-class Auth_OpenID_BcMathWrapper extends Auth_OpenID_MathLibrary{
+class Auth_OpenID_BcMathWrapper extends Auth_OpenID_MathLibrary
+{
     var $type = 'bcmath';
 
     function add($x, $y)
@@ -273,7 +274,8 @@ class Auth_OpenID_BcMathWrapper extends Auth_OpenID_MathLibrary{
  * @access private
  * @package OpenID
  */
-class Auth_OpenID_GmpMathWrapper extends Auth_OpenID_MathLibrary{
+class Auth_OpenID_GmpMathWrapper extends Auth_OpenID_MathLibrary
+{
     var $type = 'gmp';
 
     function add($x, $y)
@@ -344,7 +346,7 @@ function Auth_OpenID_math_extensions()
 {
     $result = array();
 
-    if (!defined('Auth_OpenID_BUGGY_GMP')) {
+    if (! defined('Auth_OpenID_BUGGY_GMP')) {
         $result[] =
             array('modules' => array('gmp', 'php_gmp'),
                   'extension' => 'gmp',
@@ -368,13 +370,12 @@ function Auth_OpenID_detectMathLibrary($exts)
 
     foreach ($exts as $extension) {
         // See if the extension specified is already loaded.
-        if ($extension['extension'] &&
-            extension_loaded($extension['extension'])) {
+        if ($extension['extension'] && extension_loaded($extension['extension'])) {
             $loaded = true;
         }
 
         // Try to load dynamic modules.
-        if (!$loaded) {
+        if (! $loaded) {
             foreach ($extension['modules'] as $module) {
                 if (@dl($module . "." . PHP_SHLIB_SUFFIX)) {
                     $loaded = true;

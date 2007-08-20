@@ -1,5 +1,4 @@
 <?php
-
 /**
  * This module contains code for dealing with associations between
  * consumers and servers.
@@ -17,17 +16,17 @@
 /**
  * @access private
  */
-require_once 'Auth/OpenID/CryptUtil.php';
+require_once('Auth/OpenID/CryptUtil.php');
 
 /**
  * @access private
  */
-require_once 'Auth/OpenID/KVForm.php';
+require_once('Auth/OpenID/KVForm.php');
 
 /**
  * @access private
  */
-require_once 'Auth/OpenID/HMACSHA1.php';
+require_once('Auth/OpenID/HMACSHA1.php');
 
 /**
  * This class represents an association between a server and a
@@ -126,8 +125,7 @@ class Auth_OpenID_Association {
     function Auth_OpenID_Association(
         $handle, $secret, $issued, $lifetime, $assoc_type)
     {
-        if (!in_array($assoc_type,
-                      Auth_OpenID_getSupportedAssociationTypes())) {
+        if (! in_array($assoc_type, Auth_OpenID_getSupportedAssociationTypes())) {
             $fmt = 'Unsupported association type (%s)';
             trigger_error(sprintf($fmt, $assoc_type), E_USER_ERROR);
         }
@@ -330,9 +328,7 @@ class Auth_OpenID_Association {
         $pairs = array();
         $data = $message->toPostArgs();
         foreach ($signed_list as $field) {
-            $pairs[] = array($field, Auth_OpenID::arrayGet($data,
-                                                           'openid.' .
-                                                           $field, ''));
+            $pairs[] = array($field, Auth_OpenID::arrayGet($data, 'openid.' . $field, ''));
         }
         return $pairs;
     }
@@ -357,8 +353,7 @@ class Auth_OpenID_Association {
      */
     function checkMessageSignature(&$message)
     {
-        $sig = $message->getArg(Auth_OpenID_OPENID_NS,
-                                'sig');
+        $sig = $message->getArg(Auth_OpenID_OPENID_NS, 'sig');
 
         if (!$sig) {
             return false;
@@ -515,7 +510,8 @@ function &Auth_OpenID_getEncryptedNegotiator()
  *
  * @package OpenID
  */
-class Auth_OpenID_SessionNegotiator {
+class Auth_OpenID_SessionNegotiator
+{
     function Auth_OpenID_SessionNegotiator($allowed_types)
     {
         $this->allowed_types = $allowed_types;
@@ -577,11 +573,9 @@ class Auth_OpenID_SessionNegotiator {
     // Is this combination of association type and session type allowed?
     function isAllowed($assoc_type, $session_type)
     {
-        $assoc_good = in_array(array($assoc_type, $session_type),
-                               $this->allowed_types);
+        $assoc_good = in_array(array($assoc_type, $session_type), $this->allowed_types);
 
-        $matches = in_array($session_type,
-                            Auth_OpenID_getSessionTypes($assoc_type));
+        $matches = in_array($session_type, Auth_OpenID_getSessionTypes($assoc_type));
 
         return ($assoc_good && $matches);
     }

@@ -17,8 +17,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 Copyright (C) 2007 Marco Aurelio Graciotto Silva <magsilva@gmail.com>
 */
 
-set_include_path(get_include_path() . PATH_SEPARATOR . dirname(__FILE__));
-
 require_once('Auth/OpenID/Consumer.php');
 require_once('Auth/OpenID/FileStore.php');
 require_once('Auth/OpenID/SReg.php');
@@ -28,7 +26,7 @@ class OpenIDClient
 	/**
 	 * This is where the OpenID information will be stored.
 	 */
-	var $store_path = "/tmp/_php_consumer_test";
+	var $store_path = '/tmp/_php_consumer_test';
 
 	var $store;
 
@@ -39,12 +37,16 @@ class OpenIDClient
 		return true;
 	}
 
-	function isAuthResponseConditionOk()
+	function isAuthResponseConditionOk($request = null)
 	{
-		if (! isset($_REQUEST['openid_identity']) && ! isset($_REQUEST['openid_mode'])) {
+		if ($request == null) {
+			$request =& $_REQUEST;
+		}
+		
+		if (! isset($request['openid_identity']) && ! isset($request['openid_mode'])) {
 			return false;
 		}
-		if ($_REQUEST['openid_mode'] !== 'id_res') {
+		if ($request['openid_mode'] !== 'id_res') {
 			return false;
 		}
 		return true;
@@ -52,7 +54,7 @@ class OpenIDClient
 	
 	function initialize()
 	{
-		if (!file_exists($this->store_path) && !mkdir($this->store_path)) {
+		if (! file_exists($this->store_path) && ! mkdir($this->store_path)) {
 			return null;
 		}
 
@@ -143,6 +145,7 @@ class OpenIDClient
 		
 		$response = $this->consumer->complete();
 		
+		// TODO: Where are those Auth_* defined?
 		if ($response->status == Auth_OpenID_CANCEL) {
 	    	return false;
 		} else if ($response->status == Auth_OpenID_FAILURE) {

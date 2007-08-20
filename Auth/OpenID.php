@@ -20,9 +20,9 @@
 /**
  * Require the fetcher code.
  */
-require_once "Auth/Yadis/PlainHTTPFetcher.php";
-require_once "Auth/Yadis/ParanoidHTTPFetcher.php";
-require_once "Auth/OpenID/BigMath.php";
+require_once('Auth/Yadis/PlainHTTPFetcher.php');
+require_once('Auth/Yadis/ParanoidHTTPFetcher.php');
+require_once('Auth/OpenID/BigMath.php');
 
 /**
  * Status code returned by the server when the only option is to show
@@ -224,8 +224,8 @@ class Auth_OpenID {
                 return $fallback;
             }
         } else {
-            trigger_error("Auth_OpenID::arrayGet (key = ".$key.") expected " .
-                          "array as first parameter, got " .
+            trigger_error('Auth_OpenID::arrayGet (key = ' . $key .
+                          ') expected array as first parameter, got ' .
                           gettype($arr), E_USER_WARNING);
 
             return false;
@@ -274,12 +274,12 @@ class Auth_OpenID {
         $pairs = array();
         foreach ($data as $key => $value) {
             if (is_array($value)) {
-                $pairs[] = urlencode($value[0])."=".urlencode($value[1]);
+                $pairs[] = urlencode($value[0]) . '=' . urlencode($value[1]);
             } else {
-                $pairs[] = urlencode($key)."=".urlencode($value);
+                $pairs[] = urlencode($key) . '=' . urlencode($value);
             }
         }
-        return implode("&", $pairs);
+        return implode('&', $pairs);
     }
 
     /**
@@ -389,20 +389,20 @@ class Auth_OpenID {
             $path = '/';
         }
 
-        $result = $scheme . "://" . $host;
+        $result = $scheme . '://' . $host;
 
         if ($port) {
-            $result .= ":" . $port;
+            $result .= ':' . $port;
         }
 
         $result .= $path;
 
         if ($query) {
-            $result .= "?" . $query;
+            $result .= '?' . $query;
         }
 
         if ($fragment) {
-            $result .= "#" . $fragment;
+            $result .= '#' . $fragment;
         }
 
         return $result;
@@ -429,8 +429,8 @@ class Auth_OpenID {
         $old_url = $url;
         $url = trim($url);
 
-        if (strpos($url, "://") === false) {
-            $url = "http://" . $url;
+        if (strpos($url, '://') === false) {
+            $url = 'http://' . $url;
         }
 
         $parsed = @parse_url($url);
@@ -450,24 +450,19 @@ class Auth_OpenID {
 
         $parsed = array_merge($defaults, $parsed);
 
-        if (($parsed['scheme'] == '') ||
-            ($parsed['host'] == '')) {
-            if ($parsed['path'] == '' &&
-                $parsed['query'] == '' &&
-                $parsed['fragment'] == '') {
+        if ($parsed['scheme'] == '' || $parsed['host'] == '') {
+            if ($parsed['path'] == '' && $parsed['query'] == '' && $parsed['fragment'] == '') {
                 return null;
             }
 
-            $url = 'http://' + $url;
+            $url = 'http://' . $url;
             $parsed = parse_url($url);
 
             $parsed = array_merge($defaults, $parsed);
         }
 
         $tail = array_map(array('Auth_OpenID', 'quoteMinimal'),
-                          array($parsed['path'],
-                                $parsed['query'],
-                                $parsed['fragment']));
+                          array($parsed['path'], $parsed['query'], $parsed['fragment']));
         if ($tail[0] == '') {
             $tail[0] = '/';
         }
