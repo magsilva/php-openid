@@ -18,7 +18,8 @@
 /**
  * Container for key-value/comma-newline OpenID format and parsing
  */
-class Auth_OpenID_KVForm {
+class Auth_OpenID_KVForm
+{
     /**
      * Convert an OpenID colon/newline separated string into an
      * associative array

@@ -66,12 +66,11 @@
  *
  * The OpenID server needs to maintain state between requests in order
  * to function.  Its mechanism for doing this is called a store.  The
- * store interface is defined in Interface.php.  Additionally, several
- * concrete store implementations are provided, so that most sites
- * won't need to implement a custom store.  For a store backed by flat
- * files on disk, see {@link Auth_OpenID_FileStore}.  For stores based
- * on MySQL, SQLite, or PostgreSQL, see the {@link
- * Auth_OpenID_SQLStore} subclasses.
+ * store interface is defined in Store.php.  Additionally, several concrete
+ * store implementations are provided, so that most sites won't need to
+ * implement a custom store.  For a store backed by flat files on disk, see
+ * {@link Auth_OpenID_FileStore}.  For stores based on MySQL, SQLite, or
+ * PostgreSQL, see the {@link Auth_OpenID_SQLStore} subclasses.
  *
  * Upgrading
  *
@@ -94,9 +93,10 @@
  */
 require_once "Auth/OpenID.php";
 require_once "Auth/OpenID/Association.php";
-require_once "Auth/OpenID/CryptUtil.php";
-require_once "Auth/OpenID/BigMath.php";
-require_once "Auth/OpenID/DiffieHellman.php";
+require_once('common/Crypt.php');
+require_once('common/BigMath.php');
+require_once('common/HashSHA.php');
+require_once('common/DiffieHellman.php');
 require_once "Auth/OpenID/KVForm.php";
 require_once "Auth/OpenID/TrustRoot.php";
 require_once "Auth/OpenID/ServerRequest.php";
@@ -452,7 +452,7 @@ class Auth_OpenID_DiffieHellmanSHA1ServerSession {
     var $session_type = 'DH-SHA1';
     var $needs_math = true;
     var $allowed_assoc_types = array('HMAC-SHA1');
-    var $hash_func = 'Auth_OpenID_SHA1';
+    var $hash_func = array('HashSHA', 'hashSHA1');
 
     function Auth_OpenID_DiffieHellmanSHA1ServerSession($dh, $consumer_pubkey)
     {
@@ -480,7 +480,7 @@ class Auth_OpenID_DiffieHellmanSHA1ServerSession {
                                 $missing);
         }
 
-        $lib =& Auth_OpenID_getMathLib();
+        $lib =& BigMath::getMathLib();
 
         if ($dh_modulus || $dh_gen) {
             $dh_modulus = $lib->base64ToLong($dh_modulus);
@@ -490,9 +490,9 @@ class Auth_OpenID_DiffieHellmanSHA1ServerSession {
                 return new Auth_OpenID_ServerError(
                   $message, "Failed to parse dh_mod or dh_gen");
             }
-            $dh = new Auth_OpenID_DiffieHellman($dh_modulus, $dh_gen);
+            $dh = new DiffieHellman($dh_modulus, $dh_gen);
         } else {
-            $dh = new Auth_OpenID_DiffieHellman();
+            $dh = new DiffieHellman();
         }
 
         $consumer_pubkey = $message->getArg(Auth_OpenID_OPENID_NS,
@@ -529,7 +529,7 @@ class Auth_OpenID_DiffieHellmanSHA1ServerSession {
 
     function answer($secret)
     {
-        $lib =& Auth_OpenID_getMathLib();
+        $lib =& BigMath::getMathLib();
         $mac_key = $this->dh->xorSecret($this->consumer_pubkey, $secret,
                                         $this->hash_func);
         return array(
@@ -548,7 +548,7 @@ class Auth_OpenID_DiffieHellmanSHA256ServerSession
       extends Auth_OpenID_DiffieHellmanSHA1ServerSession {
 
     var $session_type = 'DH-SHA256';
-    var $hash_func = 'Auth_OpenID_SHA256';
+    var $hash_func = array('HashSHA', 'hashSHA256');
     var $allowed_assoc_types = array('HMAC-SHA256');
 
     function fromMessage($message)
@@ -1276,13 +1276,12 @@ class Auth_OpenID_Signatory {
      */
     function createAssociation($dumb = true, $assoc_type = 'HMAC-SHA1')
     {
-        $secret = Auth_OpenID_CryptUtil::getBytes(
-                    Auth_OpenID_getSecretSize($assoc_type));
+        $secret = CryptUtil::getBytes(OpenID_Association::getSecretSize($assoc_type));
 
-        $uniq = base64_encode(Auth_OpenID_CryptUtil::getBytes(4));
+        $uniq = base64_encode(CryptUtil::getBytes(4));
         $handle = sprintf('{%s}{%x}{%s}', $assoc_type, intval(time()), $uniq);
 
-        $assoc = Auth_OpenID_Association::fromExpiresIn(
+        $assoc = OpenID_Association::fromExpiresIn(
                       $this->SECRET_LIFETIME, $handle, $secret, $assoc_type);
 
         if ($dumb) {
@@ -1525,7 +1524,7 @@ class Auth_OpenID_UntrustedReturnURL extends Auth_OpenID_ServerError {
  * Auth_OpenID_SigningEncoder::encode()} through my methods {@link
  * decodeRequest} and {@link encodeResponse}.
  *
- * All my state is encapsulated in an {@link Auth_OpenID_OpenIDStore}.
+ * All my state is encapsulated in an {@link OpenID_Store}.
  *
  * Example:
  *
@@ -1558,7 +1557,7 @@ class Auth_OpenID_Server {
         $this->encoder =& new Auth_OpenID_SigningEncoder($this->signatory);
         $this->decoder =& new Auth_OpenID_Decoder($this);
         $this->op_endpoint = $op_endpoint;
-        $this->negotiator =& Auth_OpenID_getDefaultNegotiator();
+        $this->negotiator =& Auth_OpenID::getDefaultNegotiator();
     }
 
     /**

@@ -12,6 +12,7 @@
 require_once 'Auth/OpenID.php';
 require_once 'Auth/OpenID/KVForm.php';
 require_once 'Auth/Yadis/XML.php';
+require_once 'common/HTTP.php';
 
 // This doesn't REALLY belong here, but where is better?
 define('Auth_OpenID_IDENTIFIER_SELECT',
@@ -703,7 +704,7 @@ class Auth_OpenID_Message {
         }
 
         sort($args);
-        return Auth_OpenID::httpBuildQuery($args);
+        return HTTPUtil::buildQuery($args);
     }
 
     /**

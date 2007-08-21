@@ -10,6 +10,7 @@
  * Require the base class file.
  */
 require_once "Auth/OpenID/SQLStore.php";
+require_once('common/String.php');
 
 /**
  * An SQL store that uses PostgreSQL as its backend.
@@ -89,7 +90,7 @@ class Auth_OpenID_PostgreSQLStore extends Auth_OpenID_SQLStore {
      */
     function blobEncode($blob)
     {
-        return $this->_octify($blob);
+        return StringUtil::octify($blob);
     }
 
     /**
@@ -97,7 +98,7 @@ class Auth_OpenID_PostgreSQLStore extends Auth_OpenID_SQLStore {
      */
     function blobDecode($blob)
     {
-        return $this->_unoctify($blob);
+        return StringUtil::unoctify($blob);
     }
 }
 

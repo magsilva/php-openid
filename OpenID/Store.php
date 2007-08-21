@@ -27,7 +27,7 @@
  * @package OpenID
  * @author JanRain, Inc. <openid@janrain.com>
  */
-class Auth_OpenID_OpenIDStore {
+class OpenID_Store {
     /**
      * This method puts an Association object into storage,
      * retrievable by server URL and handle.
@@ -43,8 +43,7 @@ class Auth_OpenID_OpenIDStore {
      */
     function storeAssociation($server_url, $association)
     {
-        trigger_error("Auth_OpenID_OpenIDStore::storeAssociation ".
-                      "not implemented", E_USER_ERROR);
+        trigger_error('OpenID_Store::storeAssociation not implemented', E_USER_ERROR);
     }
 
     /**
@@ -79,8 +78,7 @@ class Auth_OpenID_OpenIDStore {
      */
     function getAssociation($server_url, $handle = null)
     {
-        trigger_error("Auth_OpenID_OpenIDStore::getAssociation ".
-                      "not implemented", E_USER_ERROR);
+        trigger_error('OpenID_Store::getAssociation not implemented', E_USER_ERROR);
     }
 
     /**
@@ -103,8 +101,7 @@ class Auth_OpenID_OpenIDStore {
      */
     function removeAssociation($server_url, $handle)
     {
-        trigger_error("Auth_OpenID_OpenIDStore::removeAssociation ".
-                      "not implemented", E_USER_ERROR);
+        trigger_error('OpenID_Store::removeAssociation not implemented', E_USER_ERROR);
     }
 
     /**
@@ -128,8 +125,7 @@ class Auth_OpenID_OpenIDStore {
      */
     function useNonce($server_url, $timestamp, $salt)
     {
-        trigger_error("Auth_OpenID_OpenIDStore::useNonce ".
-                      "not implemented", E_USER_ERROR);
+        trigger_error('OpenID_Store::useNonce not implemented', E_USER_ERROR);
     }
 
     /**
@@ -137,8 +133,7 @@ class Auth_OpenID_OpenIDStore {
      */
     function getExpired()
     {
-        trigger_error("Auth_OpenID_OpenIDStore::getExpired ".
-                      "not implemented", E_USER_ERROR);
+        trigger_error('OpenID_Store::getExpired not implemented', E_USER_ERROR);
     }
 
     /**
@@ -147,6 +142,5 @@ class Auth_OpenID_OpenIDStore {
     function reset()
     {
     }
-
 }
 ?>

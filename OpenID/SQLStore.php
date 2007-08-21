@@ -13,25 +13,26 @@
  * @license http://www.gnu.org/copyleft/lesser.html LGPL
  */
 
+
 /**
- * Require the PEAR DB module because we'll need it for the SQL-based
- * stores implemented here.  We silence any errors from the inclusion
- * because it might not be present, and a user of the SQL stores may
- * supply an Auth_OpenID_DatabaseConnection instance that implements
- * its own storage.
+ * Require the PEAR DB module because we'll need it for the SQL-based stores
+ * implemented here.  We silence any errors from the inclusion because it
+ * might not be present, and a user of the SQL stores may supply an
+ * OpenID_DatabaseConnection instance that implements its own storage.
  */
-global $__Auth_OpenID_PEAR_AVAILABLE;
-$__Auth_OpenID_PEAR_AVAILABLE = @include_once 'DB.php';
+@include_once('DB.php');
 
 /**
  * @access private
  */
-require_once 'Auth/OpenID/Interface.php';
+require_once('OpenID/Store.php');
 
 /**
  * @access private
  */
-require_once 'Auth/OpenID.php';
+require_once('OpenID/OpenID.php');
+require_once('common/String.php');
+
 
 /**
  * This is the parent class for the SQL stores, which contains the
@@ -49,7 +50,7 @@ require_once 'Auth/OpenID.php';
  * database.  If you're an OpenID integrator and you'd like to create
  * an SQL-driven store that wraps an application's database
  * abstraction, be sure to create a subclass of
- * {@link Auth_OpenID_DatabaseConnection} that calls the application's
+ * {@link OpenID_DatabaseConnection} that calls the application's
  * database abstraction calls.  Then, pass an instance of your new
  * database connection class to your SQLStore subclass constructor.
  *
@@ -58,7 +59,7 @@ require_once 'Auth/OpenID.php';
  *
  * @package OpenID
  */
-class Auth_OpenID_SQLStore extends Auth_OpenID_OpenIDStore {
+class OpenID_SQLStore extends OpenID_Store {
 
     /**
      * This creates a new SQLStore instance.  It requires an
@@ -69,7 +70,7 @@ class Auth_OpenID_SQLStore extends Auth_OpenID_OpenIDStore {
      * connection to a database of the correct type for the SQLStore
      * subclass you're using.  This must either be an PEAR DB
      * connection handle or an instance of a subclass of
-     * Auth_OpenID_DatabaseConnection.
+     * OpenID_DatabaseConnection.
      *
      * @param associations_table: This is an optional parameter to
      * specify the name of the table used for storing associations.
@@ -79,23 +80,16 @@ class Auth_OpenID_SQLStore extends Auth_OpenID_OpenIDStore {
      * the name of the table used for storing nonces.  The default
      * value is 'oid_nonces'.
      */
-    function Auth_OpenID_SQLStore($connection,
-                                  $associations_table = null,
-                                  $nonces_table = null)
+    function OpenID_SQLStore($connection, $associations_table = null, $nonces_table = null)
     {
-        global $__Auth_OpenID_PEAR_AVAILABLE;
+        $this->associations_table_name = 'oid_associations';
+        $this->nonces_table_name = 'oid_nonces';
 
-        $this->associations_table_name = "oid_associations";
-        $this->nonces_table_name = "oid_nonces";
-
-        // Check the connection object type to be sure it's a PEAR
-        // database connection.
-        if (!(is_object($connection) &&
-              (is_subclass_of($connection, 'db_common') ||
-               is_subclass_of($connection,
-                              'auth_openid_databaseconnection')))) {
-            trigger_error("Auth_OpenID_SQLStore expected PEAR connection " .
-                          "object (got ".get_class($connection).")",
+        // Check the connection object type to be sure it's a PEAR database connection.
+        if (! is_object($connection) && 
+        	(is_subclass_of($connection, 'db_common') || is_subclass_of($connection, 'OpenID_DatabaseConnection'))) {
+            trigger_error('OpenID_SQLStore expected PEAR connection ' .
+                          'object (got ' . get_class($connection) . ')',
                           E_USER_ERROR);
             return;
         }
@@ -105,9 +99,9 @@ class Auth_OpenID_SQLStore extends Auth_OpenID_OpenIDStore {
         // Be sure to set the fetch mode so the results are keyed on
         // column name instead of column index.  This is a PEAR
         // constant, so only try to use it if PEAR is present.  Note
-        // that Auth_Openid_Databaseconnection instances need not
+        // that Openid_Databaseconnection instances need not
         // implement ::setFetchMode for this reason.
-        if ($__Auth_OpenID_PEAR_AVAILABLE) {
+        if (defined('DB_FETCHMODE_ASSOC')) {
             $this->connection->setFetchMode(DB_FETCHMODE_ASSOC);
         }
 
@@ -141,15 +135,15 @@ class Auth_OpenID_SQLStore extends Auth_OpenID_OpenIDStore {
         list($missing, $empty) = $this->_verifySQL();
 
         if ($missing) {
-            trigger_error("Expected keys in SQL query list: " .
-                          implode(", ", $missing),
+            trigger_error('Expected keys in SQL query list: ' .
+                          implode(', ', $missing),
                           E_USER_ERROR);
             return;
         }
 
         if ($empty) {
-            trigger_error("SQL list keys have no SQL strings: " .
-                          implode(", ", $empty),
+            trigger_error('SQL list keys have no SQL strings: ' .
+                          implode(', ', $empty),
                           E_USER_ERROR);
             return;
         }
@@ -161,8 +155,7 @@ class Auth_OpenID_SQLStore extends Auth_OpenID_OpenIDStore {
     function tableExists($table_name)
     {
         return !$this->isError(
-		$this->connection->query(sprintf('SELECT * FROM %s LIMIT 0',
-                                               $table_name)));
+		$this->connection->query(sprintf('SELECT * FROM %s LIMIT 0', $table_name)));
     }
 
     /**
@@ -203,11 +196,9 @@ class Auth_OpenID_SQLStore extends Auth_OpenID_OpenIDStore {
      */
     function reset()
     {
-        $this->connection->query(sprintf("DELETE FROM %s",
-                                         $this->associations_table_name));
+        $this->connection->query(sprintf('DELETE FROM %s', $this->associations_table_name));
 
-        $this->connection->query(sprintf("DELETE FROM %s",
-                                         $this->nonces_table_name));
+        $this->connection->query(sprintf('DELETE FROM %s', $this->nonces_table_name));
     }
 
     /**
@@ -229,7 +220,7 @@ class Auth_OpenID_SQLStore extends Auth_OpenID_OpenIDStore {
                                    );
 
         foreach ($required_sql_keys as $key) {
-            if (!array_key_exists($key, $this->sql)) {
+            if (! array_key_exists($key, $this->sql)) {
                 $missing[] = $key;
             } else if (!$this->sql[$key]) {
                 $empty[] = $key;
@@ -268,8 +259,7 @@ class Auth_OpenID_SQLStore extends Auth_OpenID_OpenIDStore {
             foreach ($keys as $k) {
                 if (is_array($this->sql[$k])) {
                     foreach ($this->sql[$k] as $part_key => $part_value) {
-                        $this->sql[$k][$part_key] = sprintf($part_value,
-                                                            $value);
+                        $this->sql[$k][$part_key] = sprintf($part_value, $value);
                     }
                 } else {
                     $this->sql[$k] = sprintf($this->sql[$k], $value);
@@ -323,8 +313,7 @@ class Auth_OpenID_SQLStore extends Auth_OpenID_OpenIDStore {
     /**
      * @access private
      */
-    function _set_assoc($server_url, $handle, $secret, $issued,
-                        $lifetime, $assoc_type)
+    function _set_assoc($server_url, $handle, $secret, $issued, $lifetime, $assoc_type)
     {
         return $this->connection->query($this->sql['set_assoc'],
                                         array(
@@ -358,8 +347,7 @@ class Auth_OpenID_SQLStore extends Auth_OpenID_OpenIDStore {
      */
     function _get_assoc($server_url, $handle)
     {
-        $result = $this->connection->getRow($this->sql['get_assoc'],
-                                            array($server_url, $handle));
+        $result = $this->connection->getRow($this->sql['get_assoc'], array($server_url, $handle));
         if ($this->isError($result)) {
             return null;
         } else {
@@ -372,8 +360,7 @@ class Auth_OpenID_SQLStore extends Auth_OpenID_OpenIDStore {
      */
     function _get_assocs($server_url)
     {
-        $result = $this->connection->getAll($this->sql['get_assocs'],
-                                            array($server_url));
+        $result = $this->connection->getAll($this->sql['get_assocs'], array($server_url));
 
         if ($this->isError($result)) {
             return array();
@@ -388,8 +375,7 @@ class Auth_OpenID_SQLStore extends Auth_OpenID_OpenIDStore {
             return false;
         }
 
-        if ($this->resultToBool($this->connection->query(
-                              $this->sql['remove_assoc'],
+        if ($this->resultToBool($this->connection->query($this->sql['remove_assoc'],
                               array($server_url, $handle)))) {
             $this->connection->commit();
         } else {
@@ -432,7 +418,7 @@ class Auth_OpenID_SQLStore extends Auth_OpenID_OpenIDStore {
             $associations = array();
 
             foreach ($assocs as $assoc_row) {
-                $assoc = new Auth_OpenID_Association($assoc_row['handle'],
+                $assoc = new OpenID_Association($assoc_row['handle'],
                                                      $assoc_row['secret'],
                                                      $assoc_row['issued'],
                                                      $assoc_row['lifetime'],
@@ -455,8 +441,7 @@ class Auth_OpenID_SQLStore extends Auth_OpenID_OpenIDStore {
                     $assocs[$key] = $assoc[1];
                 }
 
-                array_multisort($issued, SORT_DESC, $assocs, SORT_DESC,
-                                $associations);
+                array_multisort($issued, SORT_DESC, $assocs, SORT_DESC, $associations);
 
                 // return the most recently issued one.
                 list($issued, $assoc) = $associations[0];
@@ -473,9 +458,7 @@ class Auth_OpenID_SQLStore extends Auth_OpenID_OpenIDStore {
     function _add_nonce($server_url, $timestamp, $salt)
     {
         $sql = $this->sql['add_nonce'];
-        $result = $this->connection->query($sql, array($server_url,
-                                                       $timestamp,
-                                                       $salt));
+        $result = $this->connection->query($sql, array($server_url, $timestamp, $salt));
         if ($this->isError($result)) {
             $this->connection->rollback();
         } else {
@@ -489,62 +472,6 @@ class Auth_OpenID_SQLStore extends Auth_OpenID_OpenIDStore {
         return $this->_add_nonce($server_url, $timestamp, $salt);
     }
 
-    /**
-     * "Octifies" a binary string by returning a string with escaped
-     * octal bytes.  This is used for preparing binary data for
-     * PostgreSQL BYTEA fields.
-     *
-     * @access private
-     */
-    function _octify($str)
-    {
-        $result = "";
-        for ($i = 0; $i < Auth_OpenID::bytes($str); $i++) {
-            $ch = substr($str, $i, 1);
-            if ($ch == "\\") {
-                $result .= "\\\\\\\\";
-            } else if (ord($ch) == 0) {
-                $result .= "\\\\000";
-            } else {
-                $result .= "\\" . strval(decoct(ord($ch)));
-            }
-        }
-        return $result;
-    }
-
-    /**
-     * "Unoctifies" octal-escaped data from PostgreSQL and returns the
-     * resulting ASCII (possibly binary) string.
-     *
-     * @access private
-     */
-    function _unoctify($str)
-    {
-        $result = "";
-        $i = 0;
-        while ($i < strlen($str)) {
-            $char = $str[$i];
-            if ($char == "\\") {
-                // Look to see if the next char is a backslash and
-                // append it.
-                if ($str[$i + 1] != "\\") {
-                    $octal_digits = substr($str, $i + 1, 3);
-                    $dec = octdec($octal_digits);
-                    $char = chr($dec);
-                    $i += 4;
-                } else {
-                    $char = "\\";
-                    $i += 2;
-                }
-            } else {
-                $i += 1;
-            }
-
-            $result .= $char;
-        }
-
-        return $result;
-    }
 }
 
 ?>

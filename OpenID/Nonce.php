@@ -9,7 +9,7 @@
 /**
  * Need CryptUtil to generate random strings.
  */
-require_once 'Auth/OpenID/CryptUtil.php';
+require_once 'common/Crypt.php';
 
 /**
  * This is the characters that the nonces are made from.
@@ -93,8 +93,7 @@ function Auth_OpenID_checkTimestamp($nonce_string,
 function Auth_OpenID_mkNonce($when = null)
 {
     // Generate a nonce with the current timestamp
-    $salt = Auth_OpenID_CryptUtil::randomString(
-        6, Auth_OpenID_Nonce_CHRS);
+    $salt = CryptUtil::randomString(6, Auth_OpenID_Nonce_CHRS);
     if ($when === null) {
         $when = gmmktime();
     }

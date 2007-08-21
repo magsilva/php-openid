@@ -17,8 +17,8 @@
 /**
  * Import the interface for creating a new store class.
  */
-require_once 'Auth/OpenID/Interface.php';
-require_once 'Auth/OpenID/HMACSHA1.php';
+require_once('OpenID/Store.php');
+require_once('common/HashSHA.php');
 
 /**
  * This is a store for use in the worst case, when you have no way of
@@ -31,7 +31,8 @@ require_once 'Auth/OpenID/HMACSHA1.php';
  *
  * @package OpenID
  */
-class Auth_OpenID_DumbStore extends Auth_OpenID_OpenIDStore {
+class OpenID_DumbStore extends OpenID_Store
+{
 
     /**
      * Creates a new {@link Auth_OpenID_DumbStore} instance. For the security
@@ -50,9 +51,9 @@ class Auth_OpenID_DumbStore extends Auth_OpenID_OpenIDStore {
      * @param string secret_phrase The phrase used to create the auth
      * key returned by getAuthKey
      */
-    function Auth_OpenID_DumbStore($secret_phrase)
+    function OpenID_DumbStore($secret_phrase)
     {
-        $this->auth_key = Auth_OpenID_SHA1($secret_phrase);
+        $this->auth_key = HashSHA::hashSHA1($secret_phrase);
     }
 
     /**

@@ -23,6 +23,9 @@
 require_once('Auth/Yadis/PlainHTTPFetcher.php');
 require_once('Auth/Yadis/ParanoidHTTPFetcher.php');
 require_once('Auth/OpenID/BigMath.php');
+require_once('common/BigMath.php');
+require_once('common/HashSHA.php');
+require_once('common/HTTP.php');
 
 /**
  * Status code returned by the server when the only option is to show
@@ -96,8 +99,8 @@ define('Auth_OpenID_digits',
 define('Auth_OpenID_punct',
        "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~");
 
-if (Auth_OpenID_getMathLib() === null) {
-    define('Auth_OpenID_NO_MATH_SUPPORT', true);
+if (BigMath::getMathLib() === null) {
+    define('BIGMATH_NO_MATH_SUPPORT', true);
 }
 
 /**
@@ -259,30 +262,6 @@ class Auth_OpenID {
     }
 
     /**
-     * Implements the PHP 5 'http_build_query' functionality.
-     *
-     * @access private
-     * @param array $data Either an array key/value pairs or an array
-     * of arrays, each of which holding two values: a key and a value,
-     * sequentially.
-     * @return string $result The result of url-encoding the key/value
-     * pairs from $data into a URL query string
-     * (e.g. "username=bob&id=56").
-     */
-    function httpBuildQuery($data)
-    {
-        $pairs = array();
-        foreach ($data as $key => $value) {
-            if (is_array($value)) {
-                $pairs[] = urlencode($value[0]) . '=' . urlencode($value[1]);
-            } else {
-                $pairs[] = urlencode($key) . '=' . urlencode($value);
-            }
-        }
-        return implode('&', $pairs);
-    }
-
-    /**
      * "Appends" query arguments onto a URL.  The URL may or may not
      * already have arguments (following a question mark).
      *
@@ -323,7 +302,7 @@ class Auth_OpenID {
             $sep = '&';
         }
 
-        return $url . $sep . Auth_OpenID::httpBuildQuery($args);
+        return $url . $sep . HTTPUtil::buildQuery($args);
     }
 
     /**
@@ -492,37 +471,59 @@ class Auth_OpenID {
         return intval($value);
     }
 
-    /**
-     * Count the number of bytes in a string independently of
-     * multibyte support conditions.
-     *
-     * @param string $str The string of bytes to count.
-     * @return int The number of bytes in $str.
-     */
-    function bytes($str)
-    {
-        return strlen(bin2hex($str)) / 2;
-    }
 
-    /**
-     * Get the bytes in a string independently of multibyte support
-     * conditions.
-     */
-    function toBytes($str)
-    {
-        $hex = bin2hex($str);
+	function getDefaultAssociationOrder()
+	{
+	    $order = array();
+	
+	    if (! defined('BIGMATH_NO_MATH_SUPPORT')) {
+	        $order[] = array('HMAC-SHA1', 'DH-SHA1');
+	
+	        if (HashSHA::supportHashHmacSHA256()) {
+	            $order[] = array('HMAC-SHA256', 'DH-SHA256');
+	        }
+	    }
+	
+	    $order[] = array('HMAC-SHA1', 'no-encryption');
+	
+	    if (HashSHA::supportHashHmacSHA256()) {
+	        $order[] = array('HMAC-SHA256', 'no-encryption');
+	    }
+	
+	    return $order;
+	}
 
-        if (!$hex) {
-            return array();
-        }
+	function getOnlyEncryptedOrder()
+	{
+	    $result = array();
+	
+	    foreach (Auth_OpenID_getDefaultAssociationOrder() as $pair) {
+	        list($assoc, $session) = $pair;
+	
+	        if ($session != 'no-encryption') {
+	            if (HashSHA::supportHashHmacSHA256() && $assoc == 'HMAC-SHA256') {
+	                $result[] = $pair;
+	            } else if ($assoc != 'HMAC-SHA256') {
+	                $result[] = $pair;
+	            }
+	        }
+	    }
+	
+	    return $result;
+	}
 
-        $b = array();
-        for ($i = 0; $i < strlen($hex); $i += 2) {
-            $b[] = chr(base_convert(substr($hex, $i, 2), 16, 10));
-        }
-
-        return $b;
-    }
+    function &getDefaultNegotiator()
+	{
+	    $x = new Auth_OpenID_SessionNegotiator(Auth_OpenID::getDefaultAssociationOrder());
+	    return $x;
+	}
+	
+	function &getEncryptedNegotiator()
+	{
+	    $x = new Auth_OpenID_SessionNegotiator(Auth_OpenID::getOnlyEncryptedOrder());
+	    return $x;
+	}
+    
 }
 
 ?>

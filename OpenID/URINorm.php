@@ -9,7 +9,8 @@
  * @license http://www.gnu.org/copyleft/lesser.html LGPL
  */
 
-require_once 'Auth/Yadis/Misc.php';
+require_once('common/String.php');
+
 
 // from appendix B of rfc 3986 (http://www.ietf.org/rfc/rfc3986.txt)
 function Auth_OpenID_getURIPattern()
@@ -57,8 +58,7 @@ function Auth_OpenID_getUnreserved()
 function Auth_OpenID_getEscapeRE()
 {
     $parts = array();
-    foreach (array_merge(Auth_Yadis_getUCSChars(),
-                         Auth_Yadis_getIPrivateChars()) as $pair) {
+    foreach (array_merge(StringUtil::getUCSChars(), StringUtil::getIPrivateChars()) as $pair) {
         list($m, $n) = $pair;
         $parts[] = sprintf("%s-%s", chr($m), chr($n));
     }
@@ -90,15 +90,15 @@ function Auth_OpenID_remove_dot_segments($path)
     $result_segments = array();
     
     while ($path) {
-        if (Auth_Yadis_startswith($path, '../')) {
+        if (StringUtil::startWith($path, '../')) {
             $path = substr($path, 3);
-        } else if (Auth_Yadis_startswith($path, './')) {
+        } else if (StringUtil::startWith($path, './')) {
             $path = substr($path, 2);
-        } else if (Auth_Yadis_startswith($path, '/./')) {
+        } else if (StringUtil::startWith($path, '/./')) {
             $path = substr($path, 2);
         } else if ($path == '/.') {
             $path = '/';
-        } else if (Auth_Yadis_startswith($path, '/../')) {
+        } else if (StringUtil::startWith($path, '/../')) {
             $path = substr($path, 3);
             if ($result_segments) {
                 array_pop($result_segments);
