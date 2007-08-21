@@ -1,23 +1,12 @@
 <?php
 
 /**
- * This is the PHP OpenID library by JanRain, Inc.
- *
- * This module contains core utility functionality used by the
- * library.  See Consumer.php and Server.php for the consumer and
- * server implementations.
- *
- * PHP versions 4 and 5
- *
- * LICENSE: See the COPYING file included in this distribution.
- *
  * @package HTTP
  * @author JanRain, Inc. <openid@janrain.com>
  * @copyright 2005 Janrain, Inc.
  * @license http://www.gnu.org/copyleft/lesser.html LGPL
  */
-
-class HTTP
+class HTTPUtil
 {
 	/**
      * Implements the PHP 5 'http_build_query' functionality.
@@ -61,6 +50,27 @@ class HTTP
         return null;
     }
     
+    /**
+     * Transform an headers array (each line with a full header definition)
+     * into an array which content will be one array for each original
+     * header's line.
+     */
+    function headersToArray($headers, &$result = null)
+    {
+    	if ($result == null) {
+    			$result = array();
+    	}
+    	    	
+     	foreach ($headers as $header) {
+     		if (preg_match('/:/', $header)) {
+            	list($name, $value) = explode(': ', $header, 2);
+                $result[$name] = $value;
+     		}
+     	}
+     	
+     	return $result;
+    }
+        
 }
 
 ?>
