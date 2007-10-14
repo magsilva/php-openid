@@ -107,25 +107,27 @@ define('AUTH_OPENID_HTTP_OK', 200);
 define('AUTH_OPENID_HTTP_REDIRECT', 302);
 define('AUTH_OPENID_HTTP_ERROR', 400);
 
-global $_Auth_OpenID_Request_Modes,
-    $_Auth_OpenID_Encode_Kvform,
-    $_Auth_OpenID_Encode_Url;
-
 /**
  * @access private
  */
+global $_Auth_OpenID_Request_Modes;
 $_Auth_OpenID_Request_Modes = array('checkid_setup',
                                     'checkid_immediate');
 
 /**
  * @access private
  */
-$_Auth_OpenID_Encode_Kvform = array('kfvorm');
+define('Auth_OpenID_ENCODE_KVFORM', 'kfvorm');
 
 /**
  * @access private
  */
-$_Auth_OpenID_Encode_Url = array('URL/redirect');
+define('Auth_OpenID_ENCODE_URL', 'URL/redirect');
+
+/**
+ * @access private
+ */
+define('Auth_OpenID_ENCODE_HTML_FORM', 'HTML form');
 
 /**
  * @access private
@@ -155,18 +157,24 @@ class Auth_OpenID_ServerError {
         $this->reference = $reference;
     }
 
+    function getReturnTo()
+    {
+        if ($this->message &&
+            $this->message->hasKey(Auth_OpenID_OPENID_NS, 'return_to')) {
+            return $this->message->getArg(Auth_OpenID_OPENID_NS,
+                                          'return_to');
+        } else {
+            return false;
+        }
+    }
+
     /**
      * Returns the return_to URL for the request which caused this
      * error.
      */
     function hasReturnTo()
     {
-        if ($this->message) {
-            return $this->message->hasKey(Auth_OpenID_OPENID_NS,
-                                          'return_to');
-        } else {
-            return false;
-        }
+        return $this->getReturnTo() !== false;
     }
 
     /**
@@ -180,15 +188,8 @@ class Auth_OpenID_ServerError {
             return null;
         }
 
-        $return_to = $this->message->getArg(Auth_OpenID_OPENID_NS,
-                                            'return_to');
-        if (!$return_to) {
-            return null;
-        }
-
-        return Auth_OpenID::appendArgs($return_to,
-                            array('openid.mode' => 'error',
-                                  'openid.error' => $this->toString()));
+        $msg = $this->toMessage();
+        return $msg->toURL($this->getReturnTo());
     }
 
     /**
@@ -202,6 +203,12 @@ class Auth_OpenID_ServerError {
         return Auth_OpenID_KVForm::fromArray(
                                       array('mode' => 'error',
                                             'error' => $this->toString()));
+    }
+
+    function toFormMarkup()
+    {
+        $msg = $this->toMessage();
+        return $msg->toFormMarkup($this->getReturnTo());
     }
 
     function toMessage()
@@ -226,18 +233,22 @@ class Auth_OpenID_ServerError {
     }
 
     /**
-     * Returns one of $_Auth_OpenID_Encode_Url,
-     * $_Auth_OpenID_Encode_Kvform, or null, depending on the type of
+     * Returns one of Auth_OpenID_ENCODE_URL,
+     * Auth_OpenID_ENCODE_KVFORM, or null, depending on the type of
      * encoding expected for this error's payload.
      */
     function whichEncoding()
     {
-        global $_Auth_OpenID_Encode_Url,
-            $_Auth_OpenID_Encode_Kvform,
-            $_Auth_OpenID_Request_Modes;
+        global $_Auth_OpenID_Request_Modes;
 
         if ($this->hasReturnTo()) {
-            return $_Auth_OpenID_Encode_Url;
+            if ($this->message->isOpenID2() &&
+                (strlen($this->encodeToURL()) >
+                   Auth_OpenID_OPENID1_URL_LIMIT)) {
+                return Auth_OpenID_ENCODE_HTML_FORM;
+            } else {
+                return Auth_OpenID_ENCODE_URL;
+            }
         }
 
         if (!$this->message) {
@@ -249,7 +260,7 @@ class Auth_OpenID_ServerError {
 
         if ($mode) {
             if (!in_array($mode, $_Auth_OpenID_Request_Modes)) {
-                return $_Auth_OpenID_Encode_Kvform;
+                return Auth_OpenID_ENCODE_KVFORM;
             }
         }
         return null;
@@ -605,7 +616,7 @@ class Auth_OpenID_AssociateRequest extends Auth_OpenID_Request {
                                              'session_type');
             if ($session_type === null) {
                 return new Auth_OpenID_ServerError($message,
-                  'session_type missing from request');
+                  "session_type missing from request");
             }
         }
 
@@ -615,7 +626,7 @@ class Auth_OpenID_AssociateRequest extends Auth_OpenID_Request {
 
         if ($session_class === null) {
             return new Auth_OpenID_ServerError($message,
-                                               'Unknown session type ' .
+                                               "Unknown session type " .
                                                $session_type);
         }
 
@@ -629,7 +640,7 @@ class Auth_OpenID_AssociateRequest extends Auth_OpenID_Request {
                                        'assoc_type', 'HMAC-SHA1');
 
         if (!in_array($assoc_type, $session->allowed_assoc_types)) {
-            $fmt = 'Session type %s does not support association type %s';
+            $fmt = "Session type %s does not support association type %s";
             return new Auth_OpenID_ServerError($message,
               sprintf($fmt, $session_type, $assoc_type));
         }
@@ -697,6 +708,12 @@ class Auth_OpenID_AssociateRequest extends Auth_OpenID_Request {
  * @package OpenID
  */
 class Auth_OpenID_CheckIDRequest extends Auth_OpenID_Request {
+    /**
+     * Return-to verification callback.  Default is
+     * Auth_OpenID_verifyReturnTo from TrustRoot.php.
+     */
+    var $verifyReturnTo = 'Auth_OpenID_verifyReturnTo';
+
     /**
      * The mode of this request.
      */
@@ -772,6 +789,26 @@ class Auth_OpenID_CheckIDRequest extends Auth_OpenID_Request {
                 ($this->claimed_id == $other->claimed_id) &&
                 ($this->return_to == $other->return_to) &&
                 ($this->trust_root == $other->trust_root));
+    }
+
+    /*
+     * Does the relying party publish the return_to URL for this
+     * response under the realm? It is up to the provider to set a
+     * policy for what kinds of realms should be allowed. This
+     * return_to URL verification reduces vulnerability to data-theft
+     * attacks based on open proxies, corss-site-scripting, or open
+     * redirectors.
+     *
+     * This check should only be performed after making sure that the
+     * return_to URL matches the realm.
+     *
+     * @return true if the realm publishes a document with the
+     * return_to URL listed, false if not or if discovery fails
+     */
+    function returnToVerified()
+    {
+        return call_user_func_array($this->verifyReturnTo,
+                                    array($this->trust_root, $this->return_to));
     }
 
     function fromMessage(&$message, $server)
@@ -1137,20 +1174,52 @@ class Auth_OpenID_ServerResponse {
 
     function whichEncoding()
     {
-        global $_Auth_OpenID_Encode_Kvform,
-            $_Auth_OpenID_Request_Modes,
-            $_Auth_OpenID_Encode_Url;
+      global $_Auth_OpenID_Request_Modes;
 
         if (in_array($this->request->mode, $_Auth_OpenID_Request_Modes)) {
-            return $_Auth_OpenID_Encode_Url;
+            if ($this->fields->isOpenID2() &&
+                (strlen($this->encodeToURL()) >
+                   Auth_OpenID_OPENID1_URL_LIMIT)) {
+                return Auth_OpenID_ENCODE_HTML_FORM;
+            } else {
+                return Auth_OpenID_ENCODE_URL;
+            }
         } else {
-            return $_Auth_OpenID_Encode_Kvform;
+            return Auth_OpenID_ENCODE_KVFORM;
         }
     }
+
+    /*
+     * Returns the form markup for this response.
+     *
+     * @return str
+     */
+    function toFormMarkup()
+    {
+        return $this->fields->toFormMarkup(
+                 $this->fields->getArg(Auth_OpenID_OPENID_NS, 'return_to'));
+    }
+
+    /*
+     * Returns True if this response's encoding is ENCODE_HTML_FORM.
+     * Convenience method for server authors.
+     *
+     * @return bool
+     */
+    function renderAsForm()
+    {
+        return $this->whichEncoding() == Auth_OpenID_ENCODE_HTML_FORM;
+    }
+
 
     function encodeToURL()
     {
         return $this->fields->toURL($this->request->return_to);
+    }
+
+    function addExtension($extension_response)
+    {
+        $extension_response->toMessage($this->fields);
     }
 
     function needsSigning()
@@ -1354,21 +1423,21 @@ class Auth_OpenID_Encoder {
      */
     function encode(&$response)
     {
-        global $_Auth_OpenID_Encode_Kvform,
-            $_Auth_OpenID_Encode_Url;
-
         $cls = $this->responseFactory;
 
         $encode_as = $response->whichEncoding();
-        if ($encode_as == $_Auth_OpenID_Encode_Kvform) {
+        if ($encode_as == Auth_OpenID_ENCODE_KVFORM) {
             $wr = new $cls(null, null, $response->encodeToKVForm());
             if (is_a($response, 'Auth_OpenID_ServerError')) {
                 $wr->code = AUTH_OPENID_HTTP_ERROR;
             }
-        } else if ($encode_as == $_Auth_OpenID_Encode_Url) {
+        } else if ($encode_as == Auth_OpenID_ENCODE_URL) {
             $location = $response->encodeToURL();
             $wr = new $cls(AUTH_OPENID_HTTP_REDIRECT,
                            array('location' => $location));
+        } else if ($encode_as == Auth_OpenID_ENCODE_HTML_FORM) {
+          $wr = new $cls(AUTH_OPENID_HTTP_OK, array(),
+                         $response->toFormMarkup());
         } else {
             return new Auth_OpenID_EncodingError($response);
         }
@@ -1448,7 +1517,7 @@ class Auth_OpenID_Decoder {
         $mode = $message->getArg(Auth_OpenID_OPENID_NS, 'mode');
         if (!$mode) {
             return new Auth_OpenID_ServerError($message,
-                                               'No mode value in message');
+                                               "No mode value in message");
         }
 
         $handlerCls = Auth_OpenID::arrayGet($this->handlers, $mode,
@@ -1466,7 +1535,7 @@ class Auth_OpenID_Decoder {
     {
         $mode = $message->getArg(Auth_OpenID_OPENID_NS, 'mode');
         return new Auth_OpenID_ServerError($message,
-                       sprintf('No decoder for mode %s', $mode));
+                       sprintf("No decoder for mode %s", $mode));
     }
 }
 
@@ -1624,7 +1693,7 @@ class Auth_OpenID_Server {
      * Decodes a query args array into the appropriate
      * {@link Auth_OpenID_Request} object.
      */
-    function decodeRequest($query = null)
+    function decodeRequest($query=null)
     {
         if ($query === null) {
             $query = Auth_OpenID::getQuery();
