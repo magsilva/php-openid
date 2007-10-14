@@ -128,6 +128,7 @@ class OpenIDClient
 			// Send redirect.
 			// session_write_close();
 			// ob_end_flush();
+			header('Content-Lenght: 0');
 			header('Location: ' . $redirect_url);
 			exit();
 		}
